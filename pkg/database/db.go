@@ -8,7 +8,22 @@ import (
 
 // Config holds the database configuration settings.
 type Config struct {
-	DSN string `yaml:"dsn" env:"DB_DSN"`
+	URI      string `yaml:"uri" env:"DATABASE_URI"`
+	User     string `yaml:"user" env:"DB_USER"`
+	Password string `yaml:"password" env:"DB_PASSWORD"`
+	Name     string `yaml:"name" env:"DB_NAME"`
+	Host     string `yaml:"host" env:"DB_HOST"`
+	Port     string `yaml:"port" env:"DB_PORT"`
+	Driver   string `yaml:"driver" env:"DB_DRIVER"`
+	SSLMode  string `yaml:"sslmode" env:"DB_SSLMODE"`
+}
+
+// DSN returns the Data Source Name for connecting to the database.
+func (c *Config) DSN() string {
+	if c.URI != "" {
+		return c.URI
+	}
+	return c.Driver + "://" + c.User + ":" + c.Password + "@" + c.Host + ":" + c.Port + "/" + c.Name + "?sslmode=" + c.SSLMode
 }
 
 // DB defines methods to operate with DB.

@@ -10,7 +10,7 @@ type Config struct {
 	Port        string `yaml:"port" env:"SERVER_PORT"`
 	RunAddress  string `yaml:"run_address" env:"RUN_ADDRESS"`
 	AccrualAddr string `yaml:"accrual_addr" env:"ACCRUAL_SYSTEM_ADDRESS"`
-	BodyLimitMb *int   `yaml:"body_limit_mb" env:"BODY_LIMIT_MB"`
+	BodyLimitMb int    `yaml:"body_limit_mb" env:"BODY_LIMIT_MB" env-default:"-1"`
 }
 
 // GetAddr returns the server address to run on.
@@ -23,8 +23,8 @@ func (c *Config) GetAddr() string {
 
 // GetBodyLimit returns the body size limit in bytes.
 func (c *Config) GetBodyLimit() int {
-	if c.BodyLimitMb != nil {
-		return *c.BodyLimitMb * 1024 * 1024
+	if c.BodyLimitMb != -1 {
+		return c.BodyLimitMb * 1024 * 1024
 	}
 	return defaultBodyLimit
 }

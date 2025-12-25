@@ -7,6 +7,8 @@ import (
 	"syscall"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/logger"
+	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/rs/zerolog/log"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 )
@@ -24,6 +26,9 @@ func New(cfg *Config) *Server {
 		ErrorHandler: NewErrorHandler(errStatus).Handler,
 		AppName:      "LoyaltyProgram API",
 	})
+
+	app.Use(logger.New())
+	app.Use(recoverer.New())
 
 	return &Server{
 		cfg: cfg,
@@ -60,5 +65,7 @@ func (s *Server) Run() error {
 func (s *Server) listen(errCh chan<- error) {
 	addr := s.cfg.GetAddr()
 	log.Info().Str("addr", addr).Msg("starting server")
-	errCh <- errs.Wrap(s.app.Listen(addr), "serve http")
+	if err := s.app.Listen(addr); err != nil {
+		errCh <- errs.Wrap(err, "serve http")
+	}
 }

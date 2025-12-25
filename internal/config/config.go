@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/rs/zerolog/log"
 	"github.com/yogenyslav/loyalty/internal/server"
 	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
@@ -14,9 +15,9 @@ import (
 
 // Config holds the entire application configuration settings.
 type Config struct {
-	Server *server.Config   `yaml:"server"`
-	DB     *database.Config `yaml:"database"`
-	Jwt    *jwt.Config      `yaml:"jwt"`
+	Server server.Config   `yaml:"server"`
+	DB     database.Config `yaml:"database"`
+	Jwt    jwt.Config      `yaml:"jwt"`
 }
 
 // New creates a new Config.
@@ -31,22 +32,30 @@ func New(path ...string) (*Config, error) {
 	}
 
 	cfg := Config{
-		Server: &server.Config{
+		Server: server.Config{
 			RunAddress:  *serverAddr,
 			AccrualAddr: *accrualAddr,
 		},
-		DB: &database.Config{
-			DSN: *dbURI,
+		DB: database.Config{
+			URI: *dbURI,
 		},
 	}
 
 	if len(path) > 0 {
+		log.Info().Str("path", path[0]).Msg("loading config from yaml file")
 		if err := cleanenv.ReadConfig(path[0], &cfg); err != nil {
 			return nil, errs.Wrap(err, "read yaml config")
 		}
 	} else {
-		if err := cleanenv.ReadEnv(&cfg); err != nil {
-			return nil, errs.Wrap(err, "read env config")
+		log.Info().Msg("loading config from env")
+		if err := cleanenv.ReadEnv(&cfg.Server); err != nil {
+			return nil, errs.Wrap(err, "read server env config")
+		}
+		if err := cleanenv.ReadEnv(&cfg.DB); err != nil {
+			return nil, errs.Wrap(err, "read db env config")
+		}
+		if err := cleanenv.ReadEnv(&cfg.Jwt); err != nil {
+			return nil, errs.Wrap(err, "read jwt env config")
 		}
 	}
 

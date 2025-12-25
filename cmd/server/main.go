@@ -24,16 +24,21 @@ func run() error {
 	if err != nil {
 		return errs.Wrap(err, "load config")
 	}
+	log.Debug().Interface("config", cfg).Msg("config loaded")
 
 	ctx := context.Background()
-	pg, err := database.NewPostgres(ctx, cfg.DB.DSN)
+	pg, err := database.NewPostgres(ctx, cfg.DB.DSN())
 	if err != nil {
 		return errs.Wrap(err, "connect to db")
 	}
 	defer pg.Close()
 
-	jwtProvider := jwt.New(cfg.Jwt)
-	srv := server.New(cfg.Server)
+	if err = pg.Ping(ctx); err != nil {
+		return errs.Wrap(err, "ping db")
+	}
+
+	jwtProvider := jwt.New(&cfg.Jwt)
+	srv := server.New(&cfg.Server)
 
 	apiRouter := srv.Router("/api")
 	loyalty.SetupRoutes(apiRouter, pg, jwtProvider)

@@ -29,7 +29,13 @@ func (ctrl *Controller) Register(ctx context.Context, req model.RegisterReq) (mo
 		return resp, errs.Wrap(err, "insert user")
 	}
 
+	accessToken, err := ctrl.jwtProvider.CreateAccessToken(userID)
+	if err != nil {
+		return resp, errs.Wrap(err, "create access token")
+	}
+
 	resp.ID = userID
+	resp.Token = accessToken
 
 	return resp, nil
 }
