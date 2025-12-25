@@ -1,0 +1,64 @@
+// Package server implements the loyalty HTTP server.
+package server
+
+import (
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/gofiber/fiber/v3"
+	"github.com/rs/zerolog/log"
+	"github.com/yogenyslav/loyalty/pkg/errs"
+)
+
+// Server represents the loyalty HTTP server.
+type Server struct {
+	cfg *Config
+	app *fiber.App
+}
+
+// New creates a new Server instance.
+func New(cfg *Config) *Server {
+	app := fiber.New(fiber.Config{
+		BodyLimit:    cfg.GetBodyLimit(),
+		ErrorHandler: NewErrorHandler(errStatus).Handler,
+		AppName:      "LoyaltyProgram API",
+	})
+
+	return &Server{
+		cfg: cfg,
+		app: app,
+	}
+}
+
+// Router returns the server's router with specified prefix.
+func (s *Server) Router(prefix string) fiber.Router {
+	return s.app.Group(prefix)
+}
+
+// Run the HTTP server.
+func (s *Server) Run() error {
+	errCh := make(chan error, 1)
+	stopCh := make(chan os.Signal, 1)
+	signal.Notify(stopCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
+
+	go s.listen(errCh)
+
+	select {
+	case err := <-errCh:
+		return errs.Wrap(err, "server error")
+	case <-stopCh:
+		log.Info().Msg("shutting down server")
+		if err := s.app.Shutdown(); err != nil {
+			return errs.Wrap(err, "shutdown server")
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) listen(errCh chan<- error) {
+	addr := s.cfg.GetAddr()
+	log.Info().Str("addr", addr).Msg("starting server")
+	errCh <- errs.Wrap(s.app.Listen(addr), "serve http")
+}
