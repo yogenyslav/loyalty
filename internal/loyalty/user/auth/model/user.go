@@ -11,9 +11,3 @@ type User struct {
 	CreatedAt      time.Time `db:"created_at"`
 	UpdatedAt      time.Time `db:"updated_at"`
 }
-
-// UserDto is a data transfer object for user.
-type UserDto struct {
-	ID    int64  `json:"id"`
-	Login string `json:"login"`
-}
