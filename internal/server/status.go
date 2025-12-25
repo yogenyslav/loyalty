@@ -7,7 +7,7 @@ import (
 	"github.com/yogenyslav/loyalty/pkg/jwt"
 )
 
-var errStatus = map[error]ErrorResponse{
+var errStatus = map[error]ErrorResponse{ //nolint:gochecknoglobals // used for mapping errors to status codes.
 	// 400 Bad Request
 	errs.ErrInvalidRequest: {
 		Status: http.StatusBadRequest,

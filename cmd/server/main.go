@@ -43,7 +43,7 @@ func run() error {
 	apiRouter := srv.Router("/api")
 	loyalty.SetupRoutes(apiRouter, pg, jwtProvider)
 
-	if err := srv.Run(); err != nil {
+	if err = srv.Run(); err != nil {
 		return errs.Wrap(err, "run server")
 	}
 

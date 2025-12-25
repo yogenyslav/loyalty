@@ -8,14 +8,14 @@ import (
 
 // Config holds the database configuration settings.
 type Config struct {
-	URI      string `yaml:"uri" env:"DATABASE_URI"`
-	User     string `yaml:"user" env:"DB_USER"`
+	URI      string `yaml:"uri"      env:"DATABASE_URI"`
+	User     string `yaml:"user"     env:"DB_USER"`
 	Password string `yaml:"password" env:"DB_PASSWORD"`
-	Name     string `yaml:"name" env:"DB_NAME"`
-	Host     string `yaml:"host" env:"DB_HOST"`
-	Port     string `yaml:"port" env:"DB_PORT"`
-	Driver   string `yaml:"driver" env:"DB_DRIVER"`
-	SSLMode  string `yaml:"sslmode" env:"DB_SSLMODE"`
+	Name     string `yaml:"name"     env:"DB_NAME"`
+	Host     string `yaml:"host"     env:"DB_HOST"`
+	Port     string `yaml:"port"     env:"DB_PORT"`
+	Driver   string `yaml:"driver"   env:"DB_DRIVER"`
+	SSLMode  string `yaml:"sslmode"  env:"DB_SSLMODE"`
 }
 
 // DSN returns the Data Source Name for connecting to the database.

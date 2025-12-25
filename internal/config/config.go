@@ -48,14 +48,16 @@ func New(path ...string) (*Config, error) {
 		}
 	} else {
 		log.Info().Msg("loading config from env")
-		if err := cleanenv.ReadEnv(&cfg.Server); err != nil {
-			return nil, errs.Wrap(err, "read server env config")
+
+		cfgBlocks := []any{
+			&cfg.Server,
+			&cfg.DB,
+			&cfg.Jwt,
 		}
-		if err := cleanenv.ReadEnv(&cfg.DB); err != nil {
-			return nil, errs.Wrap(err, "read db env config")
-		}
-		if err := cleanenv.ReadEnv(&cfg.Jwt); err != nil {
-			return nil, errs.Wrap(err, "read jwt env config")
+		for _, block := range cfgBlocks {
+			if err := cleanenv.ReadEnv(block); err != nil {
+				return nil, errs.Wrap(err, "read env config")
+			}
 		}
 	}
 
