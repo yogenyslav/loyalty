@@ -17,6 +17,10 @@ var (
 var (
 	// ErrInvalidCredentials is an error when provided credentials are invalid.
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	// ErrMissingAccessToken is an error when access token is missing.
+	ErrMisingAccessToken = errors.New("missing access token")
+	// ErrExpiredToken is an error when invalid token data is provided.
+	ErrInvalidToken = errors.New("invalid token")
 )
 
 // 409 Conflict

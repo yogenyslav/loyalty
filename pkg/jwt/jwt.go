@@ -25,13 +25,15 @@ type Config struct {
 
 // Provider implements jwt token generation and validation.
 type Provider struct {
-	cfg *Config
+	cfg         *Config
+	secretBytes []byte
 }
 
 // New is a constructor for [Provider].
 func New(cfg *Config) *Provider {
 	return &Provider{
-		cfg: cfg,
+		cfg:         cfg,
+		secretBytes: []byte(cfg.Secret),
 	}
 }
 
@@ -71,13 +73,13 @@ func (j *Provider) ParseAccessToken(accessTokenString string) (*jwt.Token, error
 	accessToken, err := jwt.Parse(
 		accessTokenString, func(token *jwt.Token) (any, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, errs.Wrap(ErrJwtSignMethod, "parse token")
+				return nil, errs.Wrap(ErrJwtSignMethod, "verify token signature")
 			}
-			return []byte(j.cfg.Secret), nil
+			return j.secretBytes, nil
 		},
 	)
 	if err != nil {
-		return nil, err
+		return nil, errs.Wrap(err, "parse token")
 	}
 
 	return accessToken, nil
