@@ -11,21 +11,21 @@ import (
 )
 
 // Login authenticates a user and returns a JWT token upon successful authentication.
-func (ctrl *Controller) Login(ctx context.Context, req model.LoginReq) (model.LoginResp, error) {
-	var resp model.LoginResp
-
+func (ctrl *Controller) Login(ctx context.Context, req *model.LoginReq) (*model.LoginResp, error) {
 	userDB, err := ctrl.ur.FindUserByLogin(ctx, req.Login)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return resp, errs.Wrap(errs.ErrInvalidCredentials, "user not found")
+			return nil, errs.Wrap(errs.ErrInvalidCredentials, "user not found")
 		}
-		return resp, errs.Wrap(err, "find user by login")
+		return nil, errs.Wrap(err, "find user by login")
 	}
 
 	if !secure.VerifyPassword(userDB.HashedPassword, req.Password) {
-		return resp, errs.Wrap(errs.ErrInvalidCredentials, "verify password")
+		return nil, errs.Wrap(errs.ErrInvalidCredentials, "verify password")
 	}
 
-	resp.Token, err = ctrl.jwtProvider.CreateAccessToken(userDB.ID)
-	return resp, errs.Wrap(err, "create access token")
+	token, err := ctrl.jwtProvider.CreateAccessToken(userDB.ID)
+	return &model.LoginResp{
+		Token: token,
+	}, errs.Wrap(err, "create access token")
 }

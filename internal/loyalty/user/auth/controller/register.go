@@ -9,33 +9,32 @@ import (
 )
 
 // Register registers a new user and returns its ID.
-func (ctrl *Controller) Register(ctx context.Context, req model.RegisterReq) (model.RegisterResp, error) {
-	var resp model.RegisterResp
-
+func (ctrl *Controller) Register(ctx context.Context, req *model.RegisterReq) (*model.RegisterResp, error) {
 	hashedPassword, err := secure.HashPassword(req.Password)
 	if err != nil {
-		return resp, errs.Wrap(err, "hash password")
+		return nil, errs.Wrap(err, "hash password")
 	}
 
-	user := model.User{
+	user := &model.User{
 		Login:          req.Login,
 		HashedPassword: hashedPassword,
 	}
+
 	userID, err := ctrl.ur.InsertUser(ctx, user)
 	if err != nil {
 		if errs.CheckUniqueViloation(err) {
-			return resp, errs.Wrap(errs.ErrUserAlreadyExists, "insert user")
+			return nil, errs.Wrap(errs.ErrUserAlreadyExists, "insert user")
 		}
-		return resp, errs.Wrap(err, "insert user")
+		return nil, errs.Wrap(err, "insert user")
 	}
 
 	accessToken, err := ctrl.jwtProvider.CreateAccessToken(userID)
 	if err != nil {
-		return resp, errs.Wrap(err, "create access token")
+		return nil, errs.Wrap(err, "create access token")
 	}
 
-	resp.ID = userID
-	resp.Token = accessToken
-
-	return resp, nil
+	return &model.RegisterResp{
+		ID:    userID,
+		Token: accessToken,
+	}, nil
 }

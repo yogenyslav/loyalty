@@ -12,8 +12,7 @@ type Config struct {
 	Addr        string `yaml:"addr"          env:"SERVER_ADDR"`
 	Port        string `yaml:"port"          env:"SERVER_PORT"`
 	RunAddress  string `yaml:"run_address"   env:"RUN_ADDRESS"`
-	AccrualAddr string `yaml:"accrual_addr"  env:"ACCRUAL_SYSTEM_ADDRESS"`
-	BodyLimitMb int    `yaml:"body_limit_mb" env:"BODY_LIMIT_MB"          env-default:"-1"`
+	BodyLimitMb int    `yaml:"body_limit_mb" env:"BODY_LIMIT_MB" env-default:"-1"`
 }
 
 // GetAddr returns the server address to run on.

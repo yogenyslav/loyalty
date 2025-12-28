@@ -13,7 +13,7 @@ func (h *Handler) Register(c fiber.Ctx) error {
 		return errs.Wrap(errs.ErrInvalidRequest, "unmarshal req")
 	}
 
-	resp, err := h.ac.Register(c.Context(), req)
+	resp, err := h.ac.Register(c.Context(), &req)
 	if err != nil {
 		return errs.Wrap(err, "user register")
 	}

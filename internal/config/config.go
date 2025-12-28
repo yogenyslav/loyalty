@@ -7,6 +7,7 @@ import (
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/rs/zerolog/log"
+	"github.com/yogenyslav/loyalty/internal/accrual"
 	"github.com/yogenyslav/loyalty/internal/server"
 	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
@@ -15,9 +16,10 @@ import (
 
 // Config holds the entire application configuration settings.
 type Config struct {
-	Server server.Config   `yaml:"server"`
-	DB     database.Config `yaml:"database"`
-	Jwt    jwt.Config      `yaml:"jwt"`
+	Server  server.Config   `yaml:"server"`
+	DB      database.Config `yaml:"database"`
+	Jwt     jwt.Config      `yaml:"jwt"`
+	Accrual accrual.Config  `yaml:"accrual"`
 }
 
 // New creates a new Config.
@@ -33,11 +35,13 @@ func New(path ...string) (*Config, error) {
 
 	cfg := Config{
 		Server: server.Config{
-			RunAddress:  *serverAddr,
-			AccrualAddr: *accrualAddr,
+			RunAddress: *serverAddr,
 		},
 		DB: database.Config{
 			URI: *dbURI,
+		},
+		Accrual: accrual.Config{
+			BaseURL: *accrualAddr,
 		},
 	}
 
@@ -53,6 +57,7 @@ func New(path ...string) (*Config, error) {
 			&cfg.Server,
 			&cfg.DB,
 			&cfg.Jwt,
+			&cfg.Accrual,
 		}
 		for _, block := range cfgBlocks {
 			if err := cleanenv.ReadEnv(block); err != nil {

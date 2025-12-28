@@ -14,8 +14,8 @@ const findUserByLogin = `
 `
 
 // FindUserByLogin finds a user by specified login.
-func (r *Repo) FindUserByLogin(ctx context.Context, login string) (model.User, error) {
+func (r *Repo) FindUserByLogin(ctx context.Context, login string) (*model.User, error) {
 	var user model.User
 	err := r.db.QueryRow(ctx, &user, findUserByLogin, login)
-	return user, errs.Wrap(err, "query row")
+	return &user, errs.Wrap(err, "query row")
 }

@@ -26,12 +26,12 @@ func WithAuth(jwtProvider jwtProvider) fiber.Handler {
 			return errs.Wrap(err, "parse access token")
 		}
 
-		userID, ok := token.Claims.(jwtwire.MapClaims)["sub"].(int64)
+		userID, ok := token.Claims.(jwtwire.MapClaims)["sub"].(float64)
 		if !ok {
 			return errs.Wrap(errs.ErrInvalidToken, "get user id from token claims")
 		}
 
-		c.Locals("userID", userID)
+		c.Locals("userID", int64(userID))
 
 		return c.Next()
 	}

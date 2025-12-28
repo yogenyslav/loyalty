@@ -8,8 +8,8 @@ import (
 )
 
 type userRepo interface {
-	InsertUser(ctx context.Context, u model.User) (int64, error)
-	FindUserByLogin(ctx context.Context, login string) (model.User, error)
+	InsertUser(ctx context.Context, u *model.User) (int64, error)
+	FindUserByLogin(ctx context.Context, login string) (*model.User, error)
 }
 
 // JwtProvider defines the interface for JWT token generation.

@@ -3,8 +3,10 @@ package main
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/rs/zerolog/log"
+	"github.com/yogenyslav/loyalty/internal/accrual"
 	"github.com/yogenyslav/loyalty/internal/config"
 	"github.com/yogenyslav/loyalty/internal/loyalty"
 	"github.com/yogenyslav/loyalty/internal/server"
@@ -26,7 +28,9 @@ func run() error {
 	}
 	log.Debug().Interface("config", cfg).Msg("config loaded")
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	pg, err := database.NewPostgres(ctx, cfg.DB.DSN())
 	if err != nil {
 		return errs.Wrap(err, "connect to db")
@@ -38,10 +42,11 @@ func run() error {
 	}
 
 	jwtProvider := jwt.New(&cfg.Jwt)
+	accrualService := accrual.NewClient(&cfg.Accrual, http.DefaultClient)
 	srv := server.New(&cfg.Server)
 
 	apiRouter := srv.Router("/api")
-	loyalty.SetupRoutes(apiRouter, pg, jwtProvider)
+	loyalty.SetupRoutes(ctx, apiRouter, pg, jwtProvider, accrualService)
 
 	if err = srv.Run(); err != nil {
 		return errs.Wrap(err, "run server")

@@ -8,8 +8,8 @@ import (
 )
 
 type authController interface {
-	Register(ctx context.Context, req model.RegisterReq) (model.RegisterResp, error)
-	Login(ctx context.Context, req model.LoginReq) (model.LoginResp, error)
+	Register(ctx context.Context, req *model.RegisterReq) (*model.RegisterResp, error)
+	Login(ctx context.Context, req *model.LoginReq) (*model.LoginResp, error)
 }
 
 // Handler provides methods to handle HTTP requests for user authentication.

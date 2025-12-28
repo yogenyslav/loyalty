@@ -13,7 +13,7 @@ func (h *Handler) Login(c fiber.Ctx) error {
 		return errs.Wrap(errs.ErrInvalidRequest, "unmarshal req")
 	}
 
-	resp, err := h.ac.Login(c.Context(), req)
+	resp, err := h.ac.Login(c.Context(), &req)
 	if err != nil {
 		return errs.Wrap(err, "user login")
 	}
