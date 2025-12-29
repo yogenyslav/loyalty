@@ -4,20 +4,25 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/yogenyslav/loyalty/internal/loyalty/user/orders/model"
+	"github.com/yogenyslav/loyalty/internal/accrual"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 )
 
-const updateOrderStatus = `
+const updateOrderAfterPolling = `
 	update loyalty.order
-	set status = $1, 
+	set status = $2, 
+		accrual = $3,
 		updated_at = current_timestamp
-	where number = $2;
+	where number = $1;
 `
 
-// UpdateOrderStatus updates the status of an existing order.
-func (r *Repo) UpdateOrderStatus(ctx context.Context, orderNumber string, status model.Status) error {
-	rowsAffected, err := r.db.Exec(ctx, updateOrderStatus, status, orderNumber)
+// UpdateOrderAfterPolling updates the order with data received from the accrual service.
+func (r *Repo) UpdateOrderAfterPolling(ctx context.Context, data *accrual.AccrualInfo) error {
+	if data == nil {
+		return nil
+	}
+
+	rowsAffected, err := r.db.Exec(ctx, updateOrderAfterPolling, data.Order, data.Status, data.Accrual)
 	if err != nil {
 		return errs.Wrap(err, "exec query")
 	}

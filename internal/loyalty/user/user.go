@@ -18,6 +18,7 @@ type orderHandler interface {
 type balanceHandler interface {
 	GetBalance(c fiber.Ctx) error
 	Withdraw(c fiber.Ctx) error
+	ListWithdrawals(c fiber.Ctx) error
 }
 
 // Middlewares stores user-related middlewares.
@@ -38,4 +39,5 @@ func SetupRoutes(router fiber.Router, mws Middlewares, ah authHandler, oh orderH
 	// balance routes
 	router.Get("/balance", mws.AuthMiddleware, bh.GetBalance)
 	router.Post("/balance/withdraw", mws.AuthMiddleware, bh.Withdraw)
+	router.Get("/balance/withdrawals", mws.AuthMiddleware, bh.ListWithdrawals)
 }

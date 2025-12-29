@@ -8,9 +8,9 @@ import (
 )
 
 const listOrders = `
-	select number, status, accrual, user_id, created_at, updated_at
+	select number, status, accrual, fk_user_id, created_at, updated_at
 	from loyalty.order
-	where user_id = $1
+	where fk_user_id = $1
 	order by created_at;
 `
 
@@ -22,7 +22,7 @@ func (r *Repo) ListOrders(ctx context.Context, userID int64) ([]*model.Order, er
 }
 
 const findOrderByNumber = `
-	select number, status, accrual, user_id, created_at, updated_at
+	select number, status, accrual, fk_user_id, created_at, updated_at
 	from loyalty.order
 	where number = $1;
 `
@@ -30,7 +30,7 @@ const findOrderByNumber = `
 // FindOrderByNumber finds an order by its number.
 func (r *Repo) FindOrderByNumber(ctx context.Context, orderNumber string) (*model.Order, error) {
 	var order model.Order
-	err := r.db.QueryRow(ctx, &order, findOrderByNumber, orderNumber)
+	err := r.db.TxQueryRow(ctx, &order, findOrderByNumber, orderNumber)
 	return &order, errs.Wrap(err, "query struct")
 }
 

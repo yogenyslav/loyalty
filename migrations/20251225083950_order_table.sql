@@ -5,7 +5,7 @@ create type order_status as enum (
     'PROCESSING',
     'INVALID',
     'PROCESSED',
-    "REGISTERED"
+    'REGISTERED'
 );
 
 create table loyalty.order(

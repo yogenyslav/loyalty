@@ -21,39 +21,11 @@ func (ctrl *Controller) ProcessOrder(ctx context.Context, orderNumber string, us
 		UserID: userID,
 	}
 	err := ctrl.or.InsertOrder(ctx, order)
-	if err == nil { // no error!
-		// TODO: make function to process order in transaction.
-		accrualInfo, err := ctrl.accrualService.ProcessOrder(ctx, orderNumber)
+	if err == nil { // no error means order is created first time
+		err = ctrl.processNewOrder(ctx, userID, orderNumber)
 		if err != nil {
-			return "", errs.Wrap(err, "process order in accrual service")
+			return "", errs.Wrap(err, "process new order")
 		}
-
-		if accrualInfo == nil || accrualInfo.Status == model.StatusProcessing ||
-			accrualInfo.Status == model.StatusRegistered {
-			err = ctrl.or.SchedulePolling(ctx, orderNumber)
-			if err != nil {
-				return "", errs.Wrap(err, "schedule order polling")
-			}
-		}
-
-		// order is not in the accrual system
-		if accrualInfo == nil {
-			return orderNumber, nil
-		}
-
-		// update according to the real balance and status
-		if accrualInfo.Accrual > 0 && accrualInfo.Status == model.StatusProcessed {
-			err = ctrl.br.UpdateBalanceAccrual(ctx, userID, accrualInfo.Accrual)
-			if err != nil {
-				return "", errs.Wrap(err, "update balance accrual")
-			}
-		}
-
-		err = ctrl.or.UpdateOrderStatus(ctx, orderNumber, accrualInfo.Status)
-		if err != nil {
-			return "", errs.Wrap(err, "update order status")
-		}
-
 		return orderNumber, nil
 	}
 	// some error occurred
@@ -74,4 +46,56 @@ func (ctrl *Controller) ProcessOrder(ctx context.Context, orderNumber string, us
 	}
 
 	return "", nil
+}
+
+func (ctrl *Controller) processNewOrder(ctx context.Context, userID int64, orderNumber string) error {
+	accrualInfo, err := ctrl.accrualService.ProcessOrder(ctx, orderNumber)
+	if err != nil {
+		return errs.Wrap(err, "process order in accrual service")
+	}
+
+	if accrualInfo == nil || accrualInfo.Status == model.StatusProcessing ||
+		accrualInfo.Status == model.StatusRegistered {
+		err = ctrl.or.SchedulePolling(ctx, orderNumber)
+		if err != nil {
+			return errs.Wrap(err, "schedule order polling")
+		}
+	}
+
+	// order is not in the accrual system
+	if accrualInfo == nil {
+		return nil
+	}
+
+	// update according to the real balance and status
+	var updatedBalance bool
+	if accrualInfo.Accrual > 0 && accrualInfo.Status == model.StatusProcessed {
+		tx, err := ctrl.or.BeginTx(ctx)
+		if err != nil {
+			return errs.Wrap(err, "begin tx for new order processing")
+		}
+		defer ctrl.or.RollbackTx(ctx) //nolint:errcheck // nothing we can do
+
+		ctx = tx
+
+		err = ctrl.br.UpdateBalanceAccrual(ctx, userID, accrualInfo.Accrual)
+		if err != nil {
+			return errs.Wrap(err, "update balance accrual")
+		}
+		updatedBalance = true
+	}
+
+	err = ctrl.or.UpdateOrderAfterPolling(ctx, accrualInfo)
+	if err != nil {
+		return errs.Wrap(err, "update order status")
+	}
+
+	if updatedBalance {
+		err = ctrl.or.CommitTx(ctx)
+		if err != nil {
+			return errs.Wrap(err, "commit tx for new order processing")
+		}
+	}
+
+	return nil
 }

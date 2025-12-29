@@ -13,6 +13,6 @@ const deletePollingSchedule = `
 
 // DeletePollingSchedule deletes the polling schedule for a given order.
 func (r *Repo) DeletePollingSchedule(ctx context.Context, orderNumber string) error {
-	_, err := r.db.Exec(ctx, deletePollingSchedule, orderNumber)
+	_, err := r.db.TxExec(ctx, deletePollingSchedule, orderNumber)
 	return errs.Wrap(err, "exec query")
 }

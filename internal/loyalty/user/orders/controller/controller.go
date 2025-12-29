@@ -13,10 +13,14 @@ type orderRepo interface {
 	ListOrders(ctx context.Context, userID int64) ([]*model.Order, error)
 	FindOrderByNumber(ctx context.Context, orderNumber string) (*model.Order, error)
 	FindPollableOrders(ctx context.Context) ([]*model.PollableOrder, error)
+	UpdateOrderAfterPolling(ctx context.Context, data *accrual.AccrualInfo) error
 	SchedulePolling(ctx context.Context, orderNumber string) error
-	UpdateOrderStatus(ctx context.Context, orderNumber string, status model.Status) error
 	UpdatePollingSchedule(ctx context.Context, orderNumber string, backoffSeconds int) error
 	DeletePollingSchedule(ctx context.Context, orderNumber string) error
+
+	BeginTx(ctx context.Context) (context.Context, error)
+	CommitTx(ctx context.Context) error
+	RollbackTx(ctx context.Context) error
 }
 
 type balanceRepo interface {

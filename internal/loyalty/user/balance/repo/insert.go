@@ -18,7 +18,7 @@ func (r *Repo) InsertBalance(ctx context.Context, userID int64) error {
 }
 
 const insertWithdrawal = `
-	insert into loyalty.withdrawal (fk_user_id, fk_order_number, amount)
+	insert into loyalty.withdrawal (fk_user_id, order_number, amount)
 	values ($1, $2, $3)
 	returning id;
 `

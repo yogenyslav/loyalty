@@ -10,6 +10,7 @@ import (
 type balanceController interface {
 	GetBalance(ctx context.Context, userID int64) (*model.BalanceDto, error)
 	Withdraw(ctx context.Context, userID int64, req *model.WithdrawReq) error
+	ListWithdrawals(ctx context.Context, userID int64) ([]*model.WithdrawalDto, error)
 }
 
 // Handler provides methods for handling balance-related HTTP requests.

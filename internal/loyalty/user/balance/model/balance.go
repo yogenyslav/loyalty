@@ -1,12 +1,14 @@
 // Package model contains data models related to balances.
 package model
 
+import "time"
+
 // Balance represents a user's loyalty balance.
 type Balance struct {
-	UserID    string  `db:"fk_user_id"`
-	Current   float64 `db:"current"`
-	Withdrawn float64 `db:"withdrawn"`
-	UpdatedAt int64   `db:"updated_at"`
+	UserID    string    `db:"fk_user_id"`
+	Current   float64   `db:"current"`
+	Withdrawn float64   `db:"withdrawn"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 // ToDto converts Balance to BalanceDto.

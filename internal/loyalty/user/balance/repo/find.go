@@ -22,3 +22,17 @@ func (r *Repo) FindBalanceByUserID(ctx context.Context, userID int64) (*model.Ba
 	}
 	return &balance, nil
 }
+
+const listWithdrawals = `
+	select id, amount, order_number, fk_user_id, created_at
+	from loyalty.withdrawal
+	where fk_user_id = $1
+	order by created_at;
+`
+
+// ListWithdrawals returns the list of withdrawals ordered by creation date.
+func (r *Repo) ListWithdrawals(ctx context.Context, userID int64) ([]*model.Withdrawal, error) {
+	var withdrawals []*model.Withdrawal
+	err := r.db.QuerySlice(ctx, &withdrawals, listWithdrawals, userID)
+	return withdrawals, errs.Wrap(err, "query slice")
+}

@@ -10,6 +10,7 @@ import (
 type balanceRepo interface {
 	InsertWithdrawal(ctx context.Context, userID int64, orderNumber string, amount float64) (int64, error)
 	FindBalanceByUserID(ctx context.Context, userID int64) (*model.Balance, error)
+	ListWithdrawals(ctx context.Context, userID int64) ([]*model.Withdrawal, error)
 	UpdateBalanceWithdraw(ctx context.Context, userID int64, withdrawal float64) error
 }
 

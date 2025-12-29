@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"math/rand/v2"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -56,52 +55,28 @@ func (ctrl *Controller) processPollResult(
 	result accrual.PollResult,
 	errCh chan<- error,
 ) {
+	switch {
 	// polling error, increase backoff and update schedule
-	if result.Err != nil {
+	case result.Err != nil:
 		errCh <- errs.Wrap(result.Err, "poll order result")
 
 		backoffSeconds := getBackoffSeconds(ctrl.accrualService.PollInterval(), attempt)
 		err := ctrl.or.UpdatePollingSchedule(ctx, orderNumber, backoffSeconds)
 		if err != nil {
 			errCh <- errs.Wrap(err, "update polling schedule after polling error")
+			return
 		}
-		return
-	}
 
 	// only if accrual info is returned
-	if result.AccrualInfo != nil {
-		// update order status
-		// TODO: also update accrual amount.
-		err := ctrl.or.UpdateOrderStatus(ctx, orderNumber, result.AccrualInfo.Status)
+	case result.AccrualInfo != nil:
+		err := ctrl.processWithData(ctx, orderNumber, result.AccrualInfo)
 		if err != nil {
-			errCh <- errs.Wrap(err, "update order status after polling")
+			errCh <- errs.Wrap(err, "process poll result with data")
 			return
 		}
 
-		// polling returned final status, delete from polling schedule
-		if result.AccrualInfo.Status == model.StatusProcessed || result.AccrualInfo.Status == model.StatusInvalid {
-			err = ctrl.or.DeletePollingSchedule(ctx, orderNumber)
-			if err != nil {
-				errCh <- errs.Wrap(err, "delete polling schedule after final status")
-				return
-			}
-
-			order, err := ctrl.or.FindOrderByNumber(ctx, orderNumber)
-			if err != nil {
-				errCh <- errs.Wrap(err, "find order by number after polling")
-				return
-			}
-
-			err = ctrl.br.UpdateBalanceAccrual(ctx, order.UserID, result.AccrualInfo.Accrual)
-			if err != nil {
-				errCh <- errs.Wrap(err, "update balance accrual after polling")
-			}
-			return
-		}
-	}
-
-	// for not final status, reset polling schedule
-	if result.AccrualInfo == nil || result.AccrualInfo.Status == model.StatusProcessing {
+	// for not final status, reset polling schedule to default interval
+	case result.AccrualInfo == nil || result.AccrualInfo.Status == model.StatusProcessing || result.AccrualInfo.Status == model.StatusRegistered:
 		backoffSeconds := ctrl.accrualService.PollInterval()
 		err := ctrl.or.UpdatePollingSchedule(ctx, orderNumber, backoffSeconds)
 		if err != nil {
@@ -111,11 +86,54 @@ func (ctrl *Controller) processPollResult(
 	}
 }
 
-func getBackoffSeconds(baseBackoff, attempt int) int {
-	jitter := rand.IntN(baseBackoff)
-	backoff := baseBackoff*(1<<attempt) + jitter
-	if backoff > maxBackoffSeconds {
-		return maxBackoffSeconds
+func (ctrl *Controller) processWithData(
+	ctx context.Context,
+	orderNumber string,
+	accrualInfo *accrual.AccrualInfo,
+) error {
+	if accrualInfo == nil {
+		return nil
 	}
-	return backoff
+
+	if accrualInfo.Status == model.StatusProcessed || accrualInfo.Status == model.StatusInvalid {
+		tx, err := ctrl.or.BeginTx(ctx)
+		if err != nil {
+			return errs.Wrap(err, "begin tx for polling processing")
+		}
+		defer ctrl.or.RollbackTx(ctx) //nolint:errcheck // nothing we can do
+
+		// switch to tx context
+		ctx = tx
+	}
+
+	// update order status and accrual
+	err := ctrl.or.UpdateOrderAfterPolling(ctx, accrualInfo)
+	if err != nil {
+		return errs.Wrap(err, "update order after polling")
+	}
+
+	// polling returned final status, delete from polling schedule
+	if accrualInfo.Status == model.StatusProcessed || accrualInfo.Status == model.StatusInvalid {
+		err = ctrl.or.DeletePollingSchedule(ctx, orderNumber)
+		if err != nil {
+			return errs.Wrap(err, "delete polling schedule after final status")
+		}
+
+		order, err := ctrl.or.FindOrderByNumber(ctx, orderNumber)
+		if err != nil {
+			return errs.Wrap(err, "find order by number after polling")
+		}
+
+		err = ctrl.br.UpdateBalanceAccrual(ctx, order.UserID, accrualInfo.Accrual)
+		if err != nil {
+			return errs.Wrap(err, "update balance accrual after polling")
+		}
+
+		err = ctrl.or.CommitTx(ctx)
+		if err != nil {
+			return errs.Wrap(err, "commit tx for polling processing")
+		}
+	}
+
+	return nil
 }

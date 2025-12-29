@@ -10,7 +10,7 @@ create table loyalty.balance(
 create table loyalty.withdrawal(
     "id" bigserial primary key,
     amount numeric(10, 2) not null,
-    fk_order_number text references loyalty.order("number") on delete cascade,
+    order_number text not null,
     fk_user_id bigint references loyalty."user"("id") on delete cascade,
     created_at timestamp not null default current_timestamp
 );
