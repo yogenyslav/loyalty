@@ -1,6 +1,6 @@
 module github.com/yogenyslav/loyalty
 
-go 1.25.5
+go 1.25.0
 
 require (
 	github.com/georgysavva/scany/v2 v2.1.4
