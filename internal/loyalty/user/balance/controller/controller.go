@@ -7,6 +7,7 @@ import (
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/balance/model"
 )
 
+//go:generate mockgen -destination=../../../../../tests/mocks/balance_repo.go -package=mocks . balanceRepo
 type balanceRepo interface {
 	InsertWithdrawal(ctx context.Context, userID int64, orderNumber string, amount float64) (int64, error)
 	FindBalanceByUserID(ctx context.Context, userID int64) (*model.Balance, error)

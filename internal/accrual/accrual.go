@@ -13,6 +13,8 @@ type Config struct {
 }
 
 // HTTPClient defines the interface for making HTTP requests.
+//
+//go:generate mockgen -destination=./http_client.go -package=accrual . HTTPClient
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }

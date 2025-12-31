@@ -128,8 +128,16 @@ func (p *Postgres) TxQuerySlice(ctx context.Context, dst any, query string, args
 }
 
 // BeginTx starts a new transaction and returns a new context containing it.
-func (p *Postgres) BeginTx(ctx context.Context) (context.Context, error) {
-	tx, err := p.pool.Begin(ctx)
+func (p *Postgres) BeginTx(ctx context.Context, level TxLevel) (context.Context, error) {
+	var opts pgx.TxOptions
+	switch level {
+	case TxLevelReadCommitted:
+		opts.IsoLevel = pgx.ReadCommitted
+	case TxLevelSerializable:
+		opts.IsoLevel = pgx.Serializable
+	}
+
+	tx, err := p.pool.BeginTx(ctx, opts)
 	if err != nil {
 		return nil, err
 	}

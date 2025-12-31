@@ -21,7 +21,7 @@ type ErrorHandler struct {
 }
 
 // NewErrorHandler creates a new ErrorHandler instance with the given error status map.
-func NewErrorHandler(errStatus map[error]ErrorResponse) ErrorHandler {
+func NewErrorHandler() ErrorHandler {
 	status := map[error]ErrorResponse{
 		pgx.ErrNoRows: {
 			ErrMessage: "no requested resource",

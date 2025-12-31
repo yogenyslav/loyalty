@@ -40,7 +40,7 @@ const findPollableOrders = `
 	join loyalty.poll_accrual pa
 		on o.number = pa.order_number
 	where pa.next_poll <= current_timestamp
-		and o.status in ('NEW', 'PROCESSING');
+		and o.status in ('NEW', 'PROCESSING', 'REGISTERED');
 `
 
 // FindPollableOrders finds orders that may be polled for updates.

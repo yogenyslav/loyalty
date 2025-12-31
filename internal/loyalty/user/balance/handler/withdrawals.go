@@ -7,6 +7,7 @@ import (
 	"github.com/yogenyslav/loyalty/pkg/errs"
 )
 
+// ListWithdrawals handles the request to list user's withdrawals.
 func (h *Handler) ListWithdrawals(c fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(int64)
 	if !ok {

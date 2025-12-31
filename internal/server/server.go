@@ -23,7 +23,7 @@ type Server struct {
 func New(cfg *Config) *Server {
 	app := fiber.New(fiber.Config{
 		BodyLimit:    cfg.GetBodyLimit(),
-		ErrorHandler: NewErrorHandler(errStatus).Handler,
+		ErrorHandler: NewErrorHandler().Handler,
 		AppName:      "LoyaltyProgram API",
 	})
 

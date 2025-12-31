@@ -7,12 +7,22 @@ import (
 	"errors"
 )
 
+// TxLevel represents the transaction isolation level.
+type TxLevel string
+
+// Available transaction isolation levels.
+const (
+	TxLevelReadCommitted TxLevel = "read committed"
+	TxLevelSerializable  TxLevel = "serializable"
+)
+
 // CtxKey is a wrapper type for context keys.
 type CtxKey string
 
 // TxKey is the context key for database transactions.
 const TxKey CtxKey = "tx"
 
+// ErrNoTx is an error when no transaction found in context.
 var ErrNoTx = errors.New("no transaction in context")
 
 // Config holds the database configuration settings.
@@ -48,7 +58,7 @@ type DB interface {
 	Ping(ctx context.Context) error
 	SQLDB() (*sql.DB, error)
 	Close()
-	BeginTx(ctx context.Context) (context.Context, error)
+	BeginTx(ctx context.Context, level TxLevel) (context.Context, error)
 	CommitTx(ctx context.Context) error
 	RollbackTx(ctx context.Context) error
 }

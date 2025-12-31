@@ -41,6 +41,21 @@ func (m *MockDB) EXPECT() *MockDBMockRecorder {
 	return m.recorder
 }
 
+// BeginTx mocks base method.
+func (m *MockDB) BeginTx(ctx context.Context, level string) (context.Context, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BeginTx", ctx, level)
+	ret0, _ := ret[0].(context.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BeginTx indicates an expected call of BeginTx.
+func (mr *MockDBMockRecorder) BeginTx(ctx, level any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTx", reflect.TypeOf((*MockDB)(nil).BeginTx), ctx, level)
+}
+
 // Close mocks base method.
 func (m *MockDB) Close() {
 	m.ctrl.T.Helper()
@@ -51,6 +66,20 @@ func (m *MockDB) Close() {
 func (mr *MockDBMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDB)(nil).Close))
+}
+
+// CommitTx mocks base method.
+func (m *MockDB) CommitTx(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CommitTx", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CommitTx indicates an expected call of CommitTx.
+func (mr *MockDBMockRecorder) CommitTx(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CommitTx", reflect.TypeOf((*MockDB)(nil).CommitTx), ctx)
 }
 
 // Exec mocks base method.
@@ -88,9 +117,9 @@ func (mr *MockDBMockRecorder) Ping(ctx any) *gomock.Call {
 }
 
 // QueryRow mocks base method.
-func (m *MockDB) QueryRow(ctx context.Context, dsy any, query string, args ...any) error {
+func (m *MockDB) QueryRow(ctx context.Context, dst any, query string, args ...any) error {
 	m.ctrl.T.Helper()
-	varargs := []any{ctx, dsy, query}
+	varargs := []any{ctx, dst, query}
 	for _, a := range args {
 		varargs = append(varargs, a)
 	}
@@ -100,9 +129,9 @@ func (m *MockDB) QueryRow(ctx context.Context, dsy any, query string, args ...an
 }
 
 // QueryRow indicates an expected call of QueryRow.
-func (mr *MockDBMockRecorder) QueryRow(ctx, dsy, query any, args ...any) *gomock.Call {
+func (mr *MockDBMockRecorder) QueryRow(ctx, dst, query any, args ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, dsy, query}, args...)
+	varargs := append([]any{ctx, dst, query}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryRow", reflect.TypeOf((*MockDB)(nil).QueryRow), varargs...)
 }
 
@@ -125,6 +154,20 @@ func (mr *MockDBMockRecorder) QuerySlice(ctx, dst, query any, args ...any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QuerySlice", reflect.TypeOf((*MockDB)(nil).QuerySlice), varargs...)
 }
 
+// RollbackTx mocks base method.
+func (m *MockDB) RollbackTx(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RollbackTx", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RollbackTx indicates an expected call of RollbackTx.
+func (mr *MockDBMockRecorder) RollbackTx(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RollbackTx", reflect.TypeOf((*MockDB)(nil).RollbackTx), ctx)
+}
+
 // SQLDB mocks base method.
 func (m *MockDB) SQLDB() (*sql.DB, error) {
 	m.ctrl.T.Helper()
@@ -138,4 +181,62 @@ func (m *MockDB) SQLDB() (*sql.DB, error) {
 func (mr *MockDBMockRecorder) SQLDB() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SQLDB", reflect.TypeOf((*MockDB)(nil).SQLDB))
+}
+
+// TxExec mocks base method.
+func (m *MockDB) TxExec(ctx context.Context, query string, args ...any) (int64, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, query}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "TxExec", varargs...)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TxExec indicates an expected call of TxExec.
+func (mr *MockDBMockRecorder) TxExec(ctx, query any, args ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, query}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxExec", reflect.TypeOf((*MockDB)(nil).TxExec), varargs...)
+}
+
+// TxQueryRow mocks base method.
+func (m *MockDB) TxQueryRow(ctx context.Context, dst any, query string, args ...any) error {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, dst, query}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "TxQueryRow", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TxQueryRow indicates an expected call of TxQueryRow.
+func (mr *MockDBMockRecorder) TxQueryRow(ctx, dst, query any, args ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, dst, query}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxQueryRow", reflect.TypeOf((*MockDB)(nil).TxQueryRow), varargs...)
+}
+
+// TxQuerySlice mocks base method.
+func (m *MockDB) TxQuerySlice(ctx context.Context, dst any, query string, args ...any) error {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, dst, query}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "TxQuerySlice", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TxQuerySlice indicates an expected call of TxQuerySlice.
+func (mr *MockDBMockRecorder) TxQuerySlice(ctx, dst, query any, args ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, dst, query}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxQuerySlice", reflect.TypeOf((*MockDB)(nil).TxQuerySlice), varargs...)
 }

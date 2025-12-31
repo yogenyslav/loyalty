@@ -4,6 +4,7 @@ package config
 import (
 	"flag"
 	"os"
+	"strings"
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/rs/zerolog/log"
@@ -29,7 +30,7 @@ func New(path ...string) (*Config, error) {
 	dbURI := flags.String("d", "", "адрес подключения к базе данных")
 	accrualAddr := flags.String("r", "", "адрес системы расчёта начислений")
 
-	if err := flags.Parse(os.Args[1:]); err != nil {
+	if err := flags.Parse(os.Args[1:]); !strings.HasPrefix(err.Error(), "flag provided but not defined") {
 		return nil, errs.Wrap(err, "parse flags")
 	}
 

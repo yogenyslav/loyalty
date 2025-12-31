@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/orders/model"
+	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 	"github.com/yogenyslav/loyalty/pkg/luhn"
 )
@@ -70,7 +71,7 @@ func (ctrl *Controller) processNewOrder(ctx context.Context, userID int64, order
 	// update according to the real balance and status
 	var updatedBalance bool
 	if accrualInfo.Accrual > 0 && accrualInfo.Status == model.StatusProcessed {
-		tx, err := ctrl.or.BeginTx(ctx)
+		tx, err := ctrl.or.BeginTx(ctx, database.TxLevelSerializable)
 		if err != nil {
 			return errs.Wrap(err, "begin tx for new order processing")
 		}

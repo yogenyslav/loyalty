@@ -18,8 +18,8 @@ func New(db database.DB) *Repo {
 }
 
 // BeginTx starts a new database transaction.
-func (r *Repo) BeginTx(ctx context.Context) (context.Context, error) {
-	return r.db.BeginTx(ctx)
+func (r *Repo) BeginTx(ctx context.Context, level database.TxLevel) (context.Context, error) {
+	return r.db.BeginTx(ctx, level)
 }
 
 // CommitTx commits the current database transaction.

@@ -25,7 +25,7 @@ func (ac *AccrualClient) ProcessOrder(ctx context.Context, orderNumber string) (
 	err = retry.WithLinearBackoffRetry(ctx, &retry.Config{}, func(context.Context) error {
 		resp, err := ac.client.Do(req)
 		if err != nil {
-			return err
+			return errs.Wrap(err, "http error")
 		}
 		defer resp.Body.Close()
 

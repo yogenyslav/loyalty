@@ -7,6 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/yogenyslav/loyalty/internal/accrual"
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/orders/model"
+	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 )
 
@@ -74,9 +75,11 @@ func (ctrl *Controller) processPollResult(
 			errCh <- errs.Wrap(err, "process poll result with data")
 			return
 		}
+	}
 
-	// for not final status, reset polling schedule to default interval
-	case result.AccrualInfo == nil || result.AccrualInfo.Status == model.StatusProcessing || result.AccrualInfo.Status == model.StatusRegistered:
+	if result.Err == nil && (result.AccrualInfo == nil ||
+		result.AccrualInfo.Status == model.StatusProcessing ||
+		result.AccrualInfo.Status == model.StatusRegistered) {
 		backoffSeconds := ctrl.accrualService.PollInterval()
 		err := ctrl.or.UpdatePollingSchedule(ctx, orderNumber, backoffSeconds)
 		if err != nil {
@@ -96,7 +99,7 @@ func (ctrl *Controller) processWithData(
 	}
 
 	if accrualInfo.Status == model.StatusProcessed || accrualInfo.Status == model.StatusInvalid {
-		tx, err := ctrl.or.BeginTx(ctx)
+		tx, err := ctrl.or.BeginTx(ctx, database.TxLevelSerializable)
 		if err != nil {
 			return errs.Wrap(err, "begin tx for polling processing")
 		}

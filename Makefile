@@ -1,7 +1,7 @@
 .PHONY: test
 test:
 	@echo "running tests"
-	@go test ./... -coverprofile=coverage.out --race
+	@go test github.com/yogenyslav/loyalty/internal/... github.com/yogenyslav/loyalty/pkg/... -coverprofile=coverage.out --race
 	@go tool cover -func=coverage.out | grep total
 	@rm -f coverage.out
 
@@ -11,16 +11,16 @@ migrate-new:
 	@cd migrations && goose create $(name) sql
 
 .PHONY: migrate-up
-include .env
 migrate-up:
+	@set -a && source .env && set +a
 	@echo "migrating up"
 	@cd migrations && goose postgres "user=${DB_USER} \
           password=${DB_PASSWORD} dbname=${DB_NAME} sslmode=disable \
           host=localhost port=${DB_PORT}" up
 
 .PHONY: migrate-down
-include .env
 migrate-down:
+	@set -a && source .env && set +a
 	@echo "migrating down"
 	@cd migrations && goose postgres "user=${DB_USER} \
 		  password=${DB_PASSWORD} dbname=${DB_NAME} sslmode=disable \

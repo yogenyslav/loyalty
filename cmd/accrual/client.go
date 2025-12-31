@@ -125,7 +125,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		log.Println("failed to add order: %v", err)
+		log.Printf("failed to add order: %v", err)
 	}
 
 	err = addReward(ctx, Reward{
@@ -134,6 +134,6 @@ func main() {
 		RewardType: *rewardType,
 	})
 	if err != nil {
-		log.Println("failed to add reward: %v", err)
+		log.Printf("failed to add reward: %v", err)
 	}
 }

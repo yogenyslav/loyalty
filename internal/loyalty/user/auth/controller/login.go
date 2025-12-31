@@ -25,7 +25,11 @@ func (ctrl *Controller) Login(ctx context.Context, req *model.LoginReq) (*model.
 	}
 
 	token, err := ctrl.jwtProvider.CreateAccessToken(userDB.ID)
+	if err != nil {
+		return nil, errs.Wrap(err, "create access token")
+	}
+
 	return &model.LoginResp{
 		Token: token,
-	}, errs.Wrap(err, "create access token")
+	}, nil
 }

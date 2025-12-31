@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 
+	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 )
 
@@ -25,7 +26,7 @@ const insertWithdrawal = `
 
 // InsertWithdrawal inserts a withdrawal record for specified user and order.
 func (r *Repo) InsertWithdrawal(ctx context.Context, userID int64, orderNumber string, amount float64) (int64, error) {
-	tx, err := r.db.BeginTx(ctx)
+	tx, err := r.db.BeginTx(ctx, database.TxLevelSerializable)
 	if err != nil {
 		return 0, errs.Wrap(err, "begin tx")
 	}

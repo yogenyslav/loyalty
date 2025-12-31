@@ -1,4 +1,4 @@
-package retry_test
+package retry
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/yogenyslav/ya-metrics/pkg/retry"
 )
 
 func TestWithLinearBackoffRetry(t *testing.T) {
@@ -14,13 +13,13 @@ func TestWithLinearBackoffRetry(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		cfg     *retry.Config
+		cfg     *Config
 		fn      func(context.Context) error
 		wantErr bool
 	}{
 		{
 			name: "Success on first try",
-			cfg: &retry.Config{
+			cfg: &Config{
 				MaxRetries:         3,
 				LinearBackoffMilli: 100,
 			},
@@ -31,7 +30,7 @@ func TestWithLinearBackoffRetry(t *testing.T) {
 		},
 		{
 			name: "Success on third try",
-			cfg: &retry.Config{
+			cfg: &Config{
 				MaxRetries:         3,
 				LinearBackoffMilli: 100,
 			},
@@ -49,7 +48,7 @@ func TestWithLinearBackoffRetry(t *testing.T) {
 		},
 		{
 			name: "Fail after max retries",
-			cfg: &retry.Config{
+			cfg: &Config{
 				MaxRetries:         2,
 				LinearBackoffMilli: 100,
 			},
@@ -80,7 +79,7 @@ func TestWithLinearBackoffRetry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := retry.WithLinearBackoffRetry(context.Background(), tt.cfg, tt.fn)
+			err := WithLinearBackoffRetry(context.Background(), tt.cfg, tt.fn)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

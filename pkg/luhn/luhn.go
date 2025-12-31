@@ -8,7 +8,7 @@ var ErrInvalidNumber = errors.New("invalid number")
 
 // Validate checks if a string of numbers is valid according to the Luhn algorithm.
 func Validate(number string) bool {
-	return (checksum(number) % 10) == 0
+	return checksum(number) == 0
 }
 
 func checksum(number string) int {
@@ -18,14 +18,14 @@ func checksum(number string) int {
 	for i := length - 1; i >= 0; i-- {
 		cur := int(number[i] - '0')
 
-		if (length-i-1)%2 == 1 {
-			cur = cur * 2
-			if cur > 9 {
-				cur = cur%10 + cur/10
-			}
+		if length%2 == i%2 {
+			cur *= 2
+		}
+		if cur > 9 {
+			cur -= 9
 		}
 
 		luhn += cur
 	}
-	return luhn
+	return luhn % 10
 }
