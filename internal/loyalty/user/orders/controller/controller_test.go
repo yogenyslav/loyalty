@@ -67,6 +67,51 @@ func TestController_Process(t *testing.T) {
 		require.Equal(t, "2844830162", orderNumber)
 	})
 
+	t.Run("SQL error on inserting new order", func(t *testing.T) {
+		t.Parallel()
+
+		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
+		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
+		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+
+		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctx := t.Context()
+		orderNumber := "2844830162"
+		userID := int64(1)
+
+		orderRepo.EXPECT().
+			InsertOrder(ctx, gomock.Any()).
+			Return(errors.New("sql error"))
+
+		orderNumber, err := ctrl.ProcessOrder(ctx, orderNumber, userID)
+		require.Error(t, err)
+		require.Equal(t, "", orderNumber)
+	})
+
+	t.Run("Accrual service error on processing new order", func(t *testing.T) {
+		t.Parallel()
+
+		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
+		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
+		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+
+		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctx := t.Context()
+		orderNumber := "2844830162"
+		userID := int64(1)
+
+		orderRepo.EXPECT().
+			InsertOrder(ctx, gomock.Any()).
+			Return(nil)
+
+		accrualService.EXPECT().
+			ProcessOrder(ctx, orderNumber).
+			Return(nil, errors.New("accrual service error"))
+
+		orderNumber, err := ctrl.ProcessOrder(ctx, orderNumber, userID)
+		require.Error(t, err)
+	})
+
 	t.Run("Invalid order number", func(t *testing.T) {
 		t.Parallel()
 
@@ -546,11 +591,52 @@ func TestController_processPollResult(t *testing.T) {
 		balanceUpdater.EXPECT().
 			UpdateBalanceAccrual(ctx, int64(1), 123.45).
 			Return(errors.New("error updating balance"))
-		
-		orderRepo.EXPECT().
-				DeletePollingSchedule(ctx, orderNumber).
-				Return(nil)
 
+		orderRepo.EXPECT().
+			DeletePollingSchedule(ctx, orderNumber).
+			Return(nil)
+
+		orderRepo.EXPECT().
+			RollbackTx(ctx)
+
+		errCh := make(chan error)
+		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
+			AccrualInfo: &accrual.AccrualInfo{
+				Order:   orderNumber,
+				Status:  model.StatusProcessed,
+				Accrual: 123.45,
+			},
+			Err: nil,
+		}, errCh)
+
+		go func() {
+			for err := range errCh {
+				require.Error(t, err)
+			}
+		}()
+		time.Sleep(time.Second * 2)
+	})
+
+	t.Run("Process poll results with error on updating order after polling", func(t *testing.T) {
+		t.Parallel()
+
+		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
+		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
+		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+
+		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctx := t.Context()
+
+		orderNumber := "2844830162"
+
+		orderRepo.EXPECT().
+			BeginTx(ctx, gomock.Any()).
+			Return(ctx, nil)
+
+		orderRepo.EXPECT().
+			UpdateOrderAfterPolling(ctx, gomock.Any()).
+			Return(errors.New("error updating order after polling"))
+		
 		orderRepo.EXPECT().
 			RollbackTx(ctx)
 

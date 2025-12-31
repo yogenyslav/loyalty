@@ -200,4 +200,29 @@ func TestController_Withdraw(t *testing.T) {
 		err := ctrl.Withdraw(ctx, userID, req)
 		require.Error(t, err)
 	})
+
+	t.Run("Error from repo", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := context.Background()
+		repo := mocks.NewMockbalanceRepo(gomock.NewController(t))
+
+		ctrl := New(repo)
+
+		userID := int64(1)
+		orderNumber := "2844830162"
+		amount := 50.0
+
+		req := &model.WithdrawReq{
+			Order: orderNumber,
+			Sum:   amount,
+		}
+
+		repo.EXPECT().
+			FindBalanceByUserID(ctx, userID).
+			Return(nil, errors.New("error"))
+
+		err := ctrl.Withdraw(ctx, userID, req)
+		require.Error(t, err)
+	})
 }
