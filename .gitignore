@@ -31,6 +31,5 @@ go.work.sum
 # .idea/
 .vscode/
 
-cmd/server/server
-cmd/gophermart
+cmd/**/server
 bin/
