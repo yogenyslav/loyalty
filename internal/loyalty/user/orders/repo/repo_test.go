@@ -11,6 +11,7 @@ import (
 )
 
 func TestOrdersRepo(t *testing.T) {
+	time.Sleep(time.Second)
 	db := db_test.SetupTestDB(t)
 	defer db_test.DropMigrations(t)
 
@@ -85,6 +86,7 @@ func TestOrdersRepo(t *testing.T) {
 }
 
 func TestAccrualPolling(t *testing.T) {
+	time.Sleep(time.Second)
 	db := db_test.SetupTestDB(t)
 	defer db_test.DropMigrations(t)
 

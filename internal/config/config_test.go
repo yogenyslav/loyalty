@@ -76,6 +76,7 @@ func TestNew(t *testing.T) {
 				},
 				Jwt: jwt.Config{
 					Secret: "secret",
+					Expire: 1,
 				},
 				Accrual: accrual.Config{
 					BaseURL:      "localhost:8080",

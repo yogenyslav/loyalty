@@ -20,7 +20,7 @@ var ErrJwtSignMethod = errors.New("unexpected signing method")
 type Config struct {
 	Secret     string `yaml:"secret"     env:"JWT_SECRET"`
 	Encryption string `yaml:"encryption" env:"JWT_ENCRYPTION"`
-	Expire     int    `yaml:"expire"     env:"JWT_EXPIRE"` // in hours
+	Expire     int    `yaml:"expire"     env:"JWT_EXPIRE"     env-default:"1"` // in hours
 }
 
 // Provider implements jwt token generation and validation.
