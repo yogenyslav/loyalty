@@ -17,7 +17,7 @@ const updateOrderAfterPolling = `
 `
 
 // UpdateOrderAfterPolling updates the order with data received from the accrual service.
-func (r *Repo) UpdateOrderAfterPolling(ctx context.Context, data *accrual.AccrualInfo) error {
+func (r *Repo) UpdateOrderAfterPolling(ctx context.Context, data *accrual.OrderAccrual) error {
 	if data == nil {
 		return nil
 	}

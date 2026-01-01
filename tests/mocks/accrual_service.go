@@ -68,10 +68,10 @@ func (mr *MockAccrualServiceMockRecorder) PollInterval() *gomock.Call {
 }
 
 // ProcessOrder mocks base method.
-func (m *MockAccrualService) ProcessOrder(ctx context.Context, orderNumber string) (*accrual.AccrualInfo, error) {
+func (m *MockAccrualService) ProcessOrder(ctx context.Context, orderNumber string) (*accrual.OrderAccrual, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProcessOrder", ctx, orderNumber)
-	ret0, _ := ret[0].(*accrual.AccrualInfo)
+	ret0, _ := ret[0].(*accrual.OrderAccrual)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

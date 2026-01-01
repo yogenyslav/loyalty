@@ -37,7 +37,7 @@ func TestController_Process(t *testing.T) {
 
 		accrualService.EXPECT().
 			ProcessOrder(ctx, orderNumber).
-			Return(&accrual.AccrualInfo{
+			Return(&accrual.OrderAccrual{
 				Order:   orderNumber,
 				Status:  model.StatusProcessed,
 				Accrual: 123.45,
@@ -108,7 +108,7 @@ func TestController_Process(t *testing.T) {
 			ProcessOrder(ctx, orderNumber).
 			Return(nil, errors.New("accrual service error"))
 
-		orderNumber, err := ctrl.ProcessOrder(ctx, orderNumber, userID)
+		_, err := ctrl.ProcessOrder(ctx, orderNumber, userID)
 		require.Error(t, err)
 	})
 
@@ -146,7 +146,7 @@ func TestController_Process(t *testing.T) {
 
 		accrualService.EXPECT().
 			ProcessOrder(ctx, orderNumber).
-			Return(&accrual.AccrualInfo{
+			Return(&accrual.OrderAccrual{
 				Order:  orderNumber,
 				Status: model.StatusProcessing,
 			}, nil)
@@ -156,7 +156,7 @@ func TestController_Process(t *testing.T) {
 			Return(nil)
 
 		orderRepo.EXPECT().
-			UpdateOrderAfterPolling(ctx, &accrual.AccrualInfo{
+			UpdateOrderAfterPolling(ctx, &accrual.OrderAccrual{
 				Order:  orderNumber,
 				Status: model.StatusProcessing,
 			}).
@@ -380,7 +380,7 @@ func TestController_processPollResult(t *testing.T) {
 
 		errCh := make(chan error)
 		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			AccrualInfo: nil,
+			OrderAccrual: nil,
 			Err:         errors.New("polling error"),
 		}, errCh)
 
@@ -436,7 +436,7 @@ func TestController_processPollResult(t *testing.T) {
 
 		errCh := make(chan error)
 		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			AccrualInfo: &accrual.AccrualInfo{
+			OrderAccrual: &accrual.OrderAccrual{
 				Order:   orderNumber,
 				Status:  model.StatusProcessed,
 				Accrual: 123.45,
@@ -474,7 +474,7 @@ func TestController_processPollResult(t *testing.T) {
 
 		errCh := make(chan error)
 		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			AccrualInfo: nil,
+			OrderAccrual: nil,
 			Err:         nil,
 		}, errCh)
 
@@ -512,7 +512,7 @@ func TestController_processPollResult(t *testing.T) {
 
 		errCh := make(chan error)
 		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			AccrualInfo: &accrual.AccrualInfo{
+			OrderAccrual: &accrual.OrderAccrual{
 				Order:  orderNumber,
 				Status: model.StatusProcessing,
 			},
@@ -549,7 +549,7 @@ func TestController_processPollResult(t *testing.T) {
 
 		errCh := make(chan error)
 		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			AccrualInfo: nil,
+			OrderAccrual: nil,
 			Err:         errors.New("polling error"),
 		}, errCh)
 
@@ -601,7 +601,7 @@ func TestController_processPollResult(t *testing.T) {
 
 		errCh := make(chan error)
 		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			AccrualInfo: &accrual.AccrualInfo{
+			OrderAccrual: &accrual.OrderAccrual{
 				Order:   orderNumber,
 				Status:  model.StatusProcessed,
 				Accrual: 123.45,
@@ -636,13 +636,13 @@ func TestController_processPollResult(t *testing.T) {
 		orderRepo.EXPECT().
 			UpdateOrderAfterPolling(ctx, gomock.Any()).
 			Return(errors.New("error updating order after polling"))
-		
+
 		orderRepo.EXPECT().
 			RollbackTx(ctx)
 
 		errCh := make(chan error)
 		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			AccrualInfo: &accrual.AccrualInfo{
+			OrderAccrual: &accrual.OrderAccrual{
 				Order:   orderNumber,
 				Status:  model.StatusProcessed,
 				Accrual: 123.45,

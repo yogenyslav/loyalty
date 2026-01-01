@@ -69,7 +69,7 @@ func TestOrdersRepo(t *testing.T) {
 		err := repo.InsertOrder(ctx, order)
 		require.NoError(t, err)
 
-		data := &accrual.AccrualInfo{
+		data := &accrual.OrderAccrual{
 			Order:   order.Number,
 			Status:  "PROCESSED",
 			Accrual: 150.0,

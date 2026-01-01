@@ -48,7 +48,7 @@ func run() error {
 
 	goose.SetBaseFS(migrations.GetMigrationsFS())
 	if err = goose.SetDialect("postgres"); err != nil {
-		log.Fatal().Err(err).Msg("set goose dialect")
+		return errs.Wrap(err, "set goose dialect")
 	}
 	err = goose.Up(pgConn, ".")
 	if err != nil {
@@ -60,7 +60,7 @@ func run() error {
 	}
 
 	jwtProvider := jwt.New(&cfg.Jwt)
-	accrualService := accrual.NewClient(&cfg.Accrual, http.DefaultClient)
+	accrualService := accrual.NewService(&cfg.Accrual, http.DefaultClient)
 	srv := server.New(&cfg.Server)
 
 	apiRouter := srv.Router("/api")

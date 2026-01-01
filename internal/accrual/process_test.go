@@ -72,7 +72,7 @@ func TestAccrualClient_ProcessOrder(t *testing.T) {
 				}, nil).Times(3)
 			}
 
-			ac := NewClient(&Config{
+			ac := NewService(&Config{
 				PollInterval: 1,
 				NumWorkers:   5,
 			}, mockClient)
@@ -85,4 +85,19 @@ func TestAccrualClient_ProcessOrder(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("HTTP client error", func(t *testing.T) {
+		t.Parallel()
+
+		mockClient := new(mockHTTPClient)
+		mockClient.On("Do", mock.Anything).Return(&http.Response{}, http.ErrHandlerTimeout).Times(3)
+
+		ac := NewService(&Config{
+			PollInterval: 1,
+			NumWorkers:   5,
+		}, mockClient)
+
+		_, err := ac.ProcessOrder(t.Context(), "2844830162")
+		require.Error(t, err)
+	})
 }

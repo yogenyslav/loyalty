@@ -69,17 +69,17 @@ func (ctrl *Controller) processPollResult(
 		}
 
 	// only if accrual info is returned
-	case result.AccrualInfo != nil:
-		err := ctrl.processWithData(ctx, orderNumber, result.AccrualInfo)
+	case result.OrderAccrual != nil:
+		err := ctrl.processWithData(ctx, orderNumber, result.OrderAccrual)
 		if err != nil {
 			errCh <- errs.Wrap(err, "process poll result with data")
 			return
 		}
 	}
 
-	if result.Err == nil && (result.AccrualInfo == nil ||
-		result.AccrualInfo.Status == model.StatusProcessing ||
-		result.AccrualInfo.Status == model.StatusRegistered) {
+	if result.Err == nil && (result.OrderAccrual == nil ||
+		result.OrderAccrual.Status == model.StatusProcessing ||
+		result.OrderAccrual.Status == model.StatusRegistered) {
 		backoffSeconds := ctrl.accrualService.PollInterval()
 		err := ctrl.or.UpdatePollingSchedule(ctx, orderNumber, backoffSeconds)
 		if err != nil {
@@ -92,7 +92,7 @@ func (ctrl *Controller) processPollResult(
 func (ctrl *Controller) processWithData(
 	ctx context.Context,
 	orderNumber string,
-	accrualInfo *accrual.AccrualInfo,
+	accrualInfo *accrual.OrderAccrual,
 ) error {
 	if accrualInfo == nil {
 		return nil

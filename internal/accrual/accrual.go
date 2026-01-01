@@ -19,21 +19,21 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// AccrualClient implements client for the accrual system.
-type AccrualClient struct {
+// Service implements client for the accrual service.
+type Service struct {
 	cfg    *Config
 	client HTTPClient
 }
 
-// NewClient creates a new AccrualClient instance.
-func NewClient(cfg *Config, client HTTPClient) *AccrualClient {
-	return &AccrualClient{
+// NewService creates a new AccrualClient instance.
+func NewService(cfg *Config, client HTTPClient) *Service {
+	return &Service{
 		cfg:    cfg,
 		client: client,
 	}
 }
 
 // PollInterval returns the polling interval for the accrual system.
-func (ac *AccrualClient) PollInterval() int {
+func (ac *Service) PollInterval() int {
 	return ac.cfg.PollInterval
 }

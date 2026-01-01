@@ -14,7 +14,7 @@ import (
 )
 
 // ProcessOrder processes an order by its number.
-func (ac *AccrualClient) ProcessOrder(ctx context.Context, orderNumber string) (*AccrualInfo, error) {
+func (ac *Service) ProcessOrder(ctx context.Context, orderNumber string) (*OrderAccrual, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ac.cfg.BaseURL+"/api/orders/"+orderNumber, nil)
 	if err != nil {
 		return nil, errs.Wrap(err, "prepare request for accrual service")
@@ -57,7 +57,7 @@ func (ac *AccrualClient) ProcessOrder(ctx context.Context, orderNumber string) (
 		return nil, nil
 	}
 
-	var accrualInfo AccrualInfo
+	var accrualInfo OrderAccrual
 	err = json.Unmarshal(buff.Bytes(), &accrualInfo)
 	if err != nil {
 		return nil, errs.Wrap(err, "unmarshal accrual info")

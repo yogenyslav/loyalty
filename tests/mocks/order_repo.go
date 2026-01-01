@@ -174,7 +174,7 @@ func (mr *MockorderRepoMockRecorder) SchedulePolling(ctx, orderNumber any) *gomo
 }
 
 // UpdateOrderAfterPolling mocks base method.
-func (m *MockorderRepo) UpdateOrderAfterPolling(ctx context.Context, data *accrual.AccrualInfo) error {
+func (m *MockorderRepo) UpdateOrderAfterPolling(ctx context.Context, data *accrual.OrderAccrual) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateOrderAfterPolling", ctx, data)
 	ret0, _ := ret[0].(error)

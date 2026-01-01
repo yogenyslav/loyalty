@@ -31,7 +31,6 @@ func TestWithLinearBackoffRetry(t *testing.T) {
 		{
 			name: "Success on third try",
 			cfg: &Config{
-				MaxRetries:         3,
 				LinearBackoffMilli: 100,
 			},
 			fn: func() func(context.Context) error {
@@ -50,7 +49,6 @@ func TestWithLinearBackoffRetry(t *testing.T) {
 			name: "Fail after max retries",
 			cfg: &Config{
 				MaxRetries:         2,
-				LinearBackoffMilli: 100,
 			},
 			fn: func(context.Context) error {
 				return errors.New("err")

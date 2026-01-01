@@ -15,7 +15,7 @@ type orderRepo interface {
 	ListOrders(ctx context.Context, userID int64) ([]*model.Order, error)
 	FindOrderByNumber(ctx context.Context, orderNumber string) (*model.Order, error)
 	FindPollableOrders(ctx context.Context) ([]*model.PollableOrder, error)
-	UpdateOrderAfterPolling(ctx context.Context, data *accrual.AccrualInfo) error
+	UpdateOrderAfterPolling(ctx context.Context, data *accrual.OrderAccrual) error
 	SchedulePolling(ctx context.Context, orderNumber string) error
 	UpdatePollingSchedule(ctx context.Context, orderNumber string, backoffSeconds int) error
 	DeletePollingSchedule(ctx context.Context, orderNumber string) error
@@ -33,7 +33,7 @@ type balanceUpdater interface {
 //
 //go:generate mockgen -destination=../../../../../tests/mocks/accrual_service.go -package=mocks . AccrualService
 type AccrualService interface {
-	ProcessOrder(ctx context.Context, orderNumber string) (*accrual.AccrualInfo, error)
+	ProcessOrder(ctx context.Context, orderNumber string) (*accrual.OrderAccrual, error)
 	Poll(ctx context.Context, orders <-chan string, result chan<- accrual.PollResult)
 	PollInterval() int
 }

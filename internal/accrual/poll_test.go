@@ -58,7 +58,7 @@ func TestAccrualClient_Poll(t *testing.T) {
 				}, nil)
 			}
 
-			ac := NewClient(&Config{
+			ac := NewService(&Config{
 				PollInterval: 1,
 				NumWorkers:   2,
 			}, mockClient)

@@ -48,6 +48,7 @@ func TestWithAuth(t *testing.T) {
 
 		req := getReq(t)
 		resp, _ := app.Test(req)
+		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
@@ -61,6 +62,7 @@ func TestWithAuth(t *testing.T) {
 		req := getReq(t)
 		req.Header.Set("Authorization", "Bearer invalid_token")
 		resp, _ := app.Test(req)
+		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	})
@@ -77,6 +79,7 @@ func TestWithAuth(t *testing.T) {
 		req := getReq(t)
 		req.Header.Set("Authorization", "Bearer valid_token")
 		resp, _ := app.Test(req)
+		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
@@ -93,6 +96,7 @@ func TestWithAuth(t *testing.T) {
 		req := getReq(t)
 		req.Header.Set("Authorization", "Bearer token_without_sub")
 		resp, _ := app.Test(req)
+		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})

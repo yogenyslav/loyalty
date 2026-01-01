@@ -11,9 +11,9 @@ var ErrUnretriable = errors.New("unretriable error")
 
 var (
 	// DefaultRetries is the default number of retries.
-	DefaultRetries int = 3
+	DefaultRetries = 3
 	// DefaultLinearBackoffMilli is the default linear backoff in milliseconds.
-	DefaultLinearBackoffMilli int = 2000
+	DefaultLinearBackoffMilli = 2000
 )
 
 // Config holds retry configuration.
@@ -40,7 +40,7 @@ func WithLinearBackoffRetry(ctx context.Context, cfg *Config, fn RetryableFunc) 
 		cfg.LinearBackoffMilli = DefaultLinearBackoffMilli
 	}
 
-	for i := 0; i <= cfg.MaxRetries; i++ {
+	for i := 0; i < cfg.MaxRetries; i++ {
 		err = fn(ctx)
 		if err == nil {
 			return nil
