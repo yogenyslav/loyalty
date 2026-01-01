@@ -5,11 +5,14 @@ import (
 	"context"
 	"net/http"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog/log"
 	"github.com/yogenyslav/loyalty/internal/accrual"
 	"github.com/yogenyslav/loyalty/internal/config"
 	"github.com/yogenyslav/loyalty/internal/loyalty"
 	"github.com/yogenyslav/loyalty/internal/server"
+	"github.com/yogenyslav/loyalty/migrations"
 	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 	"github.com/yogenyslav/loyalty/pkg/jwt"
@@ -36,6 +39,21 @@ func run() error {
 		return errs.Wrap(err, "connect to db")
 	}
 	defer pg.Close()
+
+	pgConn, err := pg.SQLDB()
+	if err != nil {
+		return errs.Wrap(err, "get sql db")
+	}
+	defer pgConn.Close()
+
+	goose.SetBaseFS(migrations.GetMigrationsFS())
+	if err = goose.SetDialect("postgres"); err != nil {
+		log.Fatal().Err(err).Msg("set goose dialect")
+	}
+	err = goose.Up(pgConn, ".")
+	if err != nil {
+		return errs.Wrap(err, "apply migrations")
+	}
 
 	if err = pg.Ping(ctx); err != nil {
 		return errs.Wrap(err, "ping db")

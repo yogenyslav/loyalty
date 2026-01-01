@@ -39,5 +39,5 @@ func SetupRoutes(router fiber.Router, mws Middlewares, ah authHandler, oh orderH
 	// balance routes
 	router.Get("/balance", mws.AuthMiddleware, bh.GetBalance)
 	router.Post("/balance/withdraw", mws.AuthMiddleware, bh.Withdraw)
-	router.Get("/balance/withdrawals", mws.AuthMiddleware, bh.ListWithdrawals)
+	router.Get("/withdrawals", mws.AuthMiddleware, bh.ListWithdrawals)
 }

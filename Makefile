@@ -1,9 +1,22 @@
+include .env
+
 .PHONY: test
 test:
 	@echo "running tests"
 	@go test github.com/yogenyslav/loyalty/internal/... github.com/yogenyslav/loyalty/pkg/... -coverprofile=coverage.out --race
 	@go tool cover -func=coverage.out | grep total
 	@rm -f coverage.out
+
+.PHONY: build
+build:
+	@echo "building binaries"
+	@go build -o cmd/gophermart ./cmd/server/main.go
+
+.PHONY: autotests
+autotests: build
+	@echo "running autotests"
+	@chmod +x bin/autotests
+	@bin/autotests -test.v -gophermart-binary-path=./cmd/gophermart -gophermart-host=localhost -gophermart-port=9000 -gophermart-database-uri="postgres://pguser:pgpass@localhost:5432/dev?sslmode=disable" -accrual-binary-path=./cmd/accrual/accrual_darwin_arm64 -accrual-host=localhost -accrual-port=8080 -accrual-database-uri="postgres://pguser:pgpass@localhost:5432/dev?sslmode=disable"
 
 .PHONY: migrate-new
 migrate-new:
@@ -12,7 +25,6 @@ migrate-new:
 
 .PHONY: migrate-up
 migrate-up:
-	@set -a && source .env && set +a
 	@echo "migrating up"
 	@cd migrations && goose postgres "user=${DB_USER} \
           password=${DB_PASSWORD} dbname=${DB_NAME} sslmode=disable \
@@ -20,7 +32,6 @@ migrate-up:
 
 .PHONY: migrate-down
 migrate-down:
-	@set -a && source .env && set +a
 	@echo "migrating down"
 	@cd migrations && goose postgres "user=${DB_USER} \
 		  password=${DB_PASSWORD} dbname=${DB_NAME} sslmode=disable \

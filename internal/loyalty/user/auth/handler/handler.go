@@ -4,6 +4,7 @@ package handler
 import (
 	"context"
 
+	"github.com/gofiber/fiber/v3"
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/auth/model"
 )
 
@@ -20,4 +21,8 @@ type Handler struct {
 // New creates a new Handler instance.
 func New(ac authController) *Handler {
 	return &Handler{ac: ac}
+}
+
+func (h *Handler) setAuthHeader(c fiber.Ctx, token string) {
+	c.Set("Authorization", "Bearer "+token)
 }

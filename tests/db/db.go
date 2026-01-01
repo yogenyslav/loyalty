@@ -3,7 +3,6 @@ package db_test
 import (
 	"bytes"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -26,7 +25,6 @@ var testEnv []byte
 var (
 	testDB  database.DB
 	testCfg database.Config
-	mu      = &sync.Mutex{}
 )
 
 func init() {

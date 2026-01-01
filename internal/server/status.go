@@ -14,9 +14,6 @@ var errStatus = map[error]ErrorResponse{ //nolint:gochecknoglobals // used for m
 	errs.ErrInvalidRequest: {
 		Status: http.StatusBadRequest,
 	},
-	luhn.ErrInvalidNumber: {
-		Status: http.StatusBadRequest,
-	},
 	// 401 Unauthorized
 	errs.ErrInvalidCredentials: {
 		Status: http.StatusUnauthorized,
@@ -47,5 +44,10 @@ var errStatus = map[error]ErrorResponse{ //nolint:gochecknoglobals // used for m
 	},
 	errs.ErrOrderCreatedByAnotherUser: {
 		Status: http.StatusConflict,
+	},
+	// 422 Unprocessable Entity
+	luhn.ErrInvalidNumber: {
+		ErrMessage: "order number failed Luhn check",
+		Status:     http.StatusUnprocessableEntity,
 	},
 }

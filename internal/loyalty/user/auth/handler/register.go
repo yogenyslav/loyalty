@@ -18,5 +18,7 @@ func (h *Handler) Register(c fiber.Ctx) error {
 		return errs.Wrap(err, "user register")
 	}
 
+	h.setAuthHeader(c, resp.Token)
+
 	return c.JSON(resp)
 }
