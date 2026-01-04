@@ -15,7 +15,6 @@ import (
 
 	accrual "github.com/yogenyslav/loyalty/internal/accrual"
 	model "github.com/yogenyslav/loyalty/internal/loyalty/user/orders/model"
-	database "github.com/yogenyslav/loyalty/pkg/database"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,35 +40,6 @@ func NewMockorderRepo(ctrl *gomock.Controller) *MockorderRepo {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockorderRepo) EXPECT() *MockorderRepoMockRecorder {
 	return m.recorder
-}
-
-// BeginTx mocks base method.
-func (m *MockorderRepo) BeginTx(ctx context.Context, level database.TxLevel) (context.Context, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BeginTx", ctx, level)
-	ret0, _ := ret[0].(context.Context)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// BeginTx indicates an expected call of BeginTx.
-func (mr *MockorderRepoMockRecorder) BeginTx(ctx, level any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTx", reflect.TypeOf((*MockorderRepo)(nil).BeginTx), ctx, level)
-}
-
-// CommitTx mocks base method.
-func (m *MockorderRepo) CommitTx(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CommitTx", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CommitTx indicates an expected call of CommitTx.
-func (mr *MockorderRepoMockRecorder) CommitTx(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CommitTx", reflect.TypeOf((*MockorderRepo)(nil).CommitTx), ctx)
 }
 
 // DeletePollingSchedule mocks base method.
@@ -102,10 +72,10 @@ func (mr *MockorderRepoMockRecorder) FindOrderByNumber(ctx, orderNumber any) *go
 }
 
 // FindPollableOrders mocks base method.
-func (m *MockorderRepo) FindPollableOrders(ctx context.Context) ([]*model.PollableOrder, error) {
+func (m *MockorderRepo) FindPollableOrders(ctx context.Context) (map[string]*model.PollableOrder, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindPollableOrders", ctx)
-	ret0, _ := ret[0].([]*model.PollableOrder)
+	ret0, _ := ret[0].(map[string]*model.PollableOrder)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -143,20 +113,6 @@ func (m *MockorderRepo) ListOrders(ctx context.Context, userID int64) ([]*model.
 func (mr *MockorderRepoMockRecorder) ListOrders(ctx, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListOrders", reflect.TypeOf((*MockorderRepo)(nil).ListOrders), ctx, userID)
-}
-
-// RollbackTx mocks base method.
-func (m *MockorderRepo) RollbackTx(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RollbackTx", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RollbackTx indicates an expected call of RollbackTx.
-func (mr *MockorderRepoMockRecorder) RollbackTx(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RollbackTx", reflect.TypeOf((*MockorderRepo)(nil).RollbackTx), ctx)
 }
 
 // SchedulePolling mocks base method.

@@ -56,7 +56,7 @@ func (ctrl *Controller) processNewOrder(ctx context.Context, userID int64, order
 	}
 
 	if accrualInfo == nil || accrualInfo.Status == model.StatusProcessing ||
-		accrualInfo.Status == model.StatusRegistered {
+		accrualInfo.Status == model.StatusRegistered || accrualInfo.Status == model.StatusNew {
 		err = ctrl.or.SchedulePolling(ctx, orderNumber)
 		if err != nil {
 			return errs.Wrap(err, "schedule order polling")
@@ -69,34 +69,15 @@ func (ctrl *Controller) processNewOrder(ctx context.Context, userID int64, order
 	}
 
 	// update according to the real balance and status
-	var updatedBalance bool
-	if accrualInfo.Accrual > 0 && accrualInfo.Status == model.StatusProcessed {
-		tx, err := ctrl.or.BeginTx(ctx, database.TxLevelSerializable)
-		if err != nil {
-			return errs.Wrap(err, "begin tx for new order processing")
+	err = ctrl.uow.WithTx(ctx, database.TxLevelSerializable, func(ctx context.Context) error {
+		if accrualInfo.Accrual > 0 && accrualInfo.Status == model.StatusProcessed {
+			err := ctrl.br.UpdateBalanceAccrual(ctx, userID, accrualInfo.Accrual)
+			if err != nil {
+				return errs.Wrap(err, "update balance accrual")
+			}
 		}
-		defer ctrl.or.RollbackTx(ctx) //nolint:errcheck // nothing we can do
-
-		ctx = tx
-
-		err = ctrl.br.UpdateBalanceAccrual(ctx, userID, accrualInfo.Accrual)
-		if err != nil {
-			return errs.Wrap(err, "update balance accrual")
-		}
-		updatedBalance = true
-	}
-
-	err = ctrl.or.UpdateOrderAfterPolling(ctx, accrualInfo)
-	if err != nil {
+		err := ctrl.or.UpdateOrderAfterPolling(ctx, accrualInfo)
 		return errs.Wrap(err, "update order status")
-	}
-
-	if updatedBalance {
-		err = ctrl.or.CommitTx(ctx)
-		if err != nil {
-			return errs.Wrap(err, "commit tx for new order processing")
-		}
-	}
-
-	return nil
+	})
+	return errs.Wrap(err, "process new order with accrual data")
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/balance/model"
+	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 	"github.com/yogenyslav/loyalty/pkg/luhn"
 )
@@ -22,6 +23,18 @@ func (ctrl *Controller) Withdraw(ctx context.Context, userID int64, req *model.W
 		return errs.Wrap(errs.ErrNotEnoughBalance, "asked amount exceeds current balance")
 	}
 
-	_, err = ctrl.br.InsertWithdrawal(ctx, userID, req.Order, req.Sum)
+	err = ctrl.uow.WithTx(ctx, database.TxLevelSerializable, func(ctx context.Context) error {
+		_, err = ctrl.br.InsertWithdrawal(ctx, userID, req.Order, req.Sum)
+		if err != nil {
+			return errs.Wrap(err, "insert withdrawal")
+		}
+
+		err = ctrl.br.UpdateBalanceWithdraw(ctx, userID, req.Sum)
+		if err != nil {
+			return errs.Wrap(err, "update balance withdraw")
+		}
+
+		return nil
+	})
 	return errs.Wrap(err, "insert withdrawal")
 }

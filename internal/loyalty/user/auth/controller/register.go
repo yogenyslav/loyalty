@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/auth/model"
+	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 	"github.com/yogenyslav/loyalty/pkg/secure"
 )
@@ -20,11 +21,24 @@ func (ctrl *Controller) Register(ctx context.Context, req *model.RegisterReq) (*
 		HashedPassword: hashedPassword,
 	}
 
-	userID, err := ctrl.ur.InsertUser(ctx, user)
-	if err != nil {
-		if errs.CheckUniqueViloation(err) {
-			return nil, errs.Wrap(errs.ErrUserAlreadyExists, "insert user")
+	var userID int64
+	err = ctrl.uow.WithTx(ctx, database.TxLevelSerializable, func(ctx context.Context) error {
+		userID, err = ctrl.ur.InsertUser(ctx, user)
+		if err != nil {
+			if errs.CheckUniqueViloation(err) {
+				return errs.Wrap(errs.ErrUserAlreadyExists)
+			}
+			return errs.Wrap(err)
 		}
+
+		err = ctrl.br.InsertBalance(ctx, userID)
+		if err != nil {
+			return errs.Wrap(err, "insert balance")
+		}
+
+		return nil
+	})
+	if err != nil {
 		return nil, errs.Wrap(err, "insert user")
 	}
 

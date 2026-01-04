@@ -37,3 +37,8 @@ func NewService(cfg *Config, client HTTPClient) *Service {
 func (ac *Service) PollInterval() int {
 	return ac.cfg.PollInterval
 }
+
+// NumWorkers returns the number of workers for polling the accrual system.
+func (ac *Service) NumWorkers() int {
+	return ac.cfg.NumWorkers
+}

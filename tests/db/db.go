@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"bytes"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -9,7 +10,6 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
 	"github.com/pressly/goose/v3"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
 	"github.com/yogenyslav/loyalty/migrations"
 	"github.com/yogenyslav/loyalty/pkg/database"
@@ -32,21 +32,21 @@ func init() {
 
 	envVars, err := godotenv.Parse(bytes.NewReader(testEnv))
 	if err != nil {
-		log.Fatal().Err(err).Msg("parse test.env file")
+		log.Fatalf("parse test.env file: %v", err)
 	}
 	for k, v := range envVars {
 		if err = os.Setenv(k, v); err != nil {
-			log.Fatal().Err(err).Msgf("set env var %s", k)
+			log.Fatalf("set env var %s: %v", k, err)
 		}
 	}
 
 	goose.SetBaseFS(migrations.GetMigrationsFS())
 	if err = goose.SetDialect("postgres"); err != nil {
-		log.Fatal().Err(err).Msg("set goose dialect")
+		log.Fatalf("set goose dialect: %v", err)
 	}
 
 	if err = cleanenv.ReadEnv(&testCfg); err != nil {
-		log.Fatal().Err(err).Msg("read test db config")
+		log.Fatalf("read test db config: %v", err)
 	}
 }
 

@@ -41,10 +41,26 @@ func (m *MockAccrualService) EXPECT() *MockAccrualServiceMockRecorder {
 	return m.recorder
 }
 
-// Poll mocks base method.
-func (m *MockAccrualService) Poll(ctx context.Context, orders <-chan string, result chan<- accrual.PollResult) {
+// NumWorkers mocks base method.
+func (m *MockAccrualService) NumWorkers() int {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Poll", ctx, orders, result)
+	ret := m.ctrl.Call(m, "NumWorkers")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// NumWorkers indicates an expected call of NumWorkers.
+func (mr *MockAccrualServiceMockRecorder) NumWorkers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NumWorkers", reflect.TypeOf((*MockAccrualService)(nil).NumWorkers))
+}
+
+// Poll mocks base method.
+func (m *MockAccrualService) Poll(ctx context.Context, orders <-chan string, result chan<- *accrual.OrderAccrual) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Poll", ctx, orders, result)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Poll indicates an expected call of Poll.

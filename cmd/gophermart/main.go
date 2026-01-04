@@ -3,11 +3,12 @@ package main
 
 import (
 	"context"
+	"log"
+	"log/slog"
 	"net/http"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
-	"github.com/rs/zerolog/log"
 	"github.com/yogenyslav/loyalty/internal/accrual"
 	"github.com/yogenyslav/loyalty/internal/config"
 	"github.com/yogenyslav/loyalty/internal/loyalty"
@@ -20,7 +21,7 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatal().Err(err).Msg("fatal error")
+		log.Fatal(err)
 	}
 }
 
@@ -29,7 +30,7 @@ func run() error {
 	if err != nil {
 		return errs.Wrap(err, "load config")
 	}
-	log.Debug().Interface("config", cfg).Msg("config loaded")
+	slog.Debug("config loaded", slog.Any("config", cfg))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -64,7 +65,7 @@ func run() error {
 	srv := server.New(&cfg.Server)
 
 	apiRouter := srv.Router("/api")
-	loyalty.SetupRoutes(ctx, apiRouter, pg, jwtProvider, accrualService)
+	loyalty.InitService(ctx, apiRouter, pg, jwtProvider, accrualService)
 
 	if err = srv.Run(); err != nil {
 		return errs.Wrap(err, "run server")

@@ -93,15 +93,7 @@ func (p *Postgres) TxQueryRow(ctx context.Context, dst any, query string, args .
 	if !ok {
 		return p.QueryRow(ctx, dst, query, args...)
 	}
-
-	var err error
-	defer func() {
-		if err != nil {
-			tx.Rollback(ctx) //nolint:errcheck // nothing to do with it
-		}
-	}()
-	err = pgxscan.Get(ctx, tx, dst, query, args...)
-	return err
+	return pgxscan.Get(ctx, tx, dst, query, args...)
 }
 
 // QuerySlice executes a DQL query that returns multiple rows.
@@ -116,19 +108,11 @@ func (p *Postgres) TxQuerySlice(ctx context.Context, dst any, query string, args
 	if !ok {
 		return p.QuerySlice(ctx, dst, query, args...)
 	}
-
-	var err error
-	defer func() {
-		if err != nil {
-			tx.Rollback(ctx) //nolint:errcheck // nothing to do with it
-		}
-	}()
-	err = pgxscan.Select(ctx, tx, dst, query, args...)
-	return err
+	return pgxscan.Select(ctx, tx, dst, query, args...)
 }
 
-// BeginTx starts a new transaction and returns a new context containing it.
-func (p *Postgres) BeginTx(ctx context.Context, level TxLevel) (context.Context, error) {
+// beginTx starts a new transaction and returns a new context containing it.
+func (p *Postgres) beginTx(ctx context.Context, level TxLevel) (context.Context, error) {
 	var opts pgx.TxOptions
 	switch level {
 	case TxLevelReadCommitted:
@@ -145,8 +129,8 @@ func (p *Postgres) BeginTx(ctx context.Context, level TxLevel) (context.Context,
 	return ctx, nil
 }
 
-// CommitTx commits the transaction in the context.
-func (p *Postgres) CommitTx(ctx context.Context) error {
+// commitTx commits the transaction in the context.
+func (p *Postgres) commitTx(ctx context.Context) error {
 	tx, ok := ctx.Value(TxKey).(pgx.Tx)
 	if !ok {
 		return ErrNoTx
@@ -154,8 +138,8 @@ func (p *Postgres) CommitTx(ctx context.Context) error {
 	return tx.Commit(ctx)
 }
 
-// RollbackTx rollbacks the transaction in the context.
-func (p *Postgres) RollbackTx(ctx context.Context) error {
+// rollbackTx rollbacks the transaction in the context.
+func (p *Postgres) rollbackTx(ctx context.Context) error {
 	tx, ok := ctx.Value(TxKey).(pgx.Tx)
 	if !ok {
 		return ErrNoTx

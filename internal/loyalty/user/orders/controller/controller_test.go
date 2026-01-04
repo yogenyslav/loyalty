@@ -1,15 +1,16 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/require"
 	"github.com/yogenyslav/loyalty/internal/accrual"
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/orders/model"
+	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 	"github.com/yogenyslav/loyalty/pkg/luhn"
 	"github.com/yogenyslav/loyalty/tests/mocks"
@@ -25,8 +26,9 @@ func TestController_Process(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 		orderNumber := "2844830162"
 		userID := int64(1)
@@ -43,24 +45,19 @@ func TestController_Process(t *testing.T) {
 				Accrual: 123.45,
 			}, nil)
 
-		orderRepo.EXPECT().
-			BeginTx(ctx, gomock.Any()).
-			Return(ctx, nil)
-
-		balanceUpdater.EXPECT().
-			UpdateBalanceAccrual(ctx, userID, 123.45).
-			Return(nil)
+		uow.EXPECT().
+			WithTx(ctx, database.TxLevelSerializable, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, level database.TxLevel, fn func(ctx context.Context) error) error {
+				return fn(ctx)
+			})
 
 		orderRepo.EXPECT().
 			UpdateOrderAfterPolling(ctx, gomock.Any()).
 			Return(nil)
 
-		orderRepo.EXPECT().
-			CommitTx(ctx).
+		balanceUpdater.EXPECT().
+			UpdateBalanceAccrual(ctx, userID, 123.45).
 			Return(nil)
-
-		orderRepo.EXPECT().
-			RollbackTx(ctx)
 
 		orderNumber, err := ctrl.ProcessOrder(ctx, orderNumber, userID)
 		require.NoError(t, err)
@@ -73,8 +70,9 @@ func TestController_Process(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 		orderNumber := "2844830162"
 		userID := int64(1)
@@ -94,8 +92,9 @@ func TestController_Process(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 		orderNumber := "2844830162"
 		userID := int64(1)
@@ -118,8 +117,9 @@ func TestController_Process(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 		orderNumber := "12345"
 
@@ -134,8 +134,9 @@ func TestController_Process(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 		orderNumber := "2844830162"
 		userID := int64(1)
@@ -155,12 +156,8 @@ func TestController_Process(t *testing.T) {
 			SchedulePolling(ctx, orderNumber).
 			Return(nil)
 
-		orderRepo.EXPECT().
-			UpdateOrderAfterPolling(ctx, &accrual.OrderAccrual{
-				Order:  orderNumber,
-				Status: model.StatusProcessing,
-			}).
-			Return(nil)
+		uow.EXPECT().
+			WithTx(ctx, database.TxLevelSerializable, gomock.Any())
 
 		orderNumber, err := ctrl.ProcessOrder(ctx, orderNumber, userID)
 		require.NoError(t, err)
@@ -173,8 +170,9 @@ func TestController_Process(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 		orderNumber := "2844830162"
 		userID := int64(1)
@@ -202,8 +200,9 @@ func TestController_Process(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 		orderNumber := "2844830162"
 		userID := int64(1)
@@ -230,8 +229,9 @@ func TestController_Process(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 		orderNumber := "2844830162"
 		userID := int64(1)
@@ -262,8 +262,9 @@ func TestController_ListOrders(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 		userID := int64(1)
 		orders := []*model.Order{
@@ -293,8 +294,9 @@ func TestController_ListOrders(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 		userID := int64(1)
 
@@ -311,26 +313,16 @@ func TestController_ListOrders(t *testing.T) {
 func TestController_PollOrders(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Pollable orders are processed", func(t *testing.T) {
+	t.Run("Smoke test for polling orders", func(t *testing.T) {
 		t.Parallel()
 
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
-
-		orderNumber := "2844830162"
-
-		today := time.Now()
-		orders := []*model.PollableOrder{
-			{
-				Number:     orderNumber,
-				LastPolled: today,
-				NextPoll:   today,
-			},
-		}
 
 		accrualService.EXPECT().
 			PollInterval().
@@ -338,20 +330,80 @@ func TestController_PollOrders(t *testing.T) {
 
 		orderRepo.EXPECT().
 			FindPollableOrders(ctx).
-			Return(orders, nil)
+			Return(map[string]*model.PollableOrder{}, nil)
 
-		accrualService.EXPECT().
-			Poll(ctx, gomock.Any(), gomock.Any())
-
-		errCh := make(chan error)
+		errCh := make(chan error, 1)
 		go ctrl.PollOrders(ctx, errCh)
 
-		go func() {
-			for err := range errCh {
-				require.NoError(t, err)
-			}
-		}()
-		time.Sleep(time.Second * 2)
+		<-errCh
+	})
+}
+
+func TestController_pollOnce(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Poll once with no pollable orders", func(t *testing.T) {
+		t.Parallel()
+
+		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
+		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
+		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
+
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
+		ctx := t.Context()
+
+		err := ctrl.pollOnce(ctx, nil, nil, map[string]*model.PollableOrder{})
+		require.NoError(t, err)
+	})
+
+	t.Run("Poll once with pollable orders", func(t *testing.T) {
+		t.Parallel()
+
+		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
+		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
+		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
+
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
+		ctx := t.Context()
+
+		pollableOrders := map[string]*model.PollableOrder{
+			"2844830162": {
+				Number:  "2844830162",
+				Attempt: 0,
+			},
+			"28448301623": {
+				Number:  "28448301623",
+				Attempt: 1,
+			},
+		}
+		orders := make(chan string, len(pollableOrders))
+		results := make(chan *accrual.OrderAccrual, len(pollableOrders))
+
+		accrualService.EXPECT().
+			NumWorkers().
+			Return(1)
+
+		accrualService.EXPECT().
+			Poll(gomock.Any(), orders, results).
+			DoAndReturn(func(ctx context.Context, orders <-chan string, results chan<- *accrual.OrderAccrual) error {
+				for order := range orders {
+					results <- &accrual.OrderAccrual{
+						Order:  order,
+						Status: model.StatusProcessing,
+					}
+				}
+				return nil
+			})
+
+		uow.EXPECT().
+			WithTx(gomock.Any(), database.TxLevelSerializable, gomock.Any()).
+			Return(nil).
+			Times(len(pollableOrders))
+
+		err := ctrl.pollOnce(ctx, orders, results, pollableOrders)
+		require.NoError(t, err)
 	})
 }
 
@@ -364,8 +416,9 @@ func TestController_processPollResult(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 
 		orderNumber := "2844830162"
@@ -378,18 +431,8 @@ func TestController_processPollResult(t *testing.T) {
 			UpdatePollingSchedule(ctx, orderNumber, gomock.Any()).
 			Return(nil)
 
-		errCh := make(chan error)
-		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			OrderAccrual: nil,
-			Err:         errors.New("polling error"),
-		}, errCh)
-
-		go func() {
-			for err := range errCh {
-				require.Error(t, err)
-			}
-		}()
-		time.Sleep(time.Second * 2)
+		err := ctrl.processPollResult(ctx, orderNumber, 0, nil, errors.New("polling error"))
+		require.NoError(t, err)
 	})
 
 	t.Run("Process poll results with accrual info", func(t *testing.T) {
@@ -398,58 +441,44 @@ func TestController_processPollResult(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 
 		orderNumber := "2844830162"
 
-		orderRepo.EXPECT().
-			BeginTx(ctx, gomock.Any()).
-			Return(ctx, nil)
+		uow.EXPECT().
+			WithTx(ctx, database.TxLevelSerializable, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, level database.TxLevel, fn func(ctx context.Context) error) error {
+				return fn(ctx)
+			})
 
 		orderRepo.EXPECT().
 			UpdateOrderAfterPolling(ctx, gomock.Any()).
 			Return(nil)
 
 		orderRepo.EXPECT().
-			DeletePollingSchedule(ctx, orderNumber).
+			DeletePollingSchedule(ctx, gomock.Any()).
 			Return(nil)
 
 		orderRepo.EXPECT().
 			FindOrderByNumber(ctx, orderNumber).
 			Return(&model.Order{
 				Number: orderNumber,
-				UserID: int64(1),
+				UserID: 1,
 			}, nil)
 
 		balanceUpdater.EXPECT().
 			UpdateBalanceAccrual(ctx, int64(1), 123.45).
 			Return(nil)
 
-		orderRepo.EXPECT().
-			CommitTx(ctx).
-			Return(nil)
-
-		orderRepo.EXPECT().
-			RollbackTx(ctx)
-
-		errCh := make(chan error)
-		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			OrderAccrual: &accrual.OrderAccrual{
-				Order:   orderNumber,
-				Status:  model.StatusProcessed,
-				Accrual: 123.45,
-			},
-			Err: nil,
-		}, errCh)
-
-		go func() {
-			for err := range errCh {
-				require.NoError(t, err)
-			}
-		}()
-		time.Sleep(time.Second * 2)
+		err := ctrl.processPollResult(ctx, orderNumber, 0, &accrual.OrderAccrual{
+			Order:   orderNumber,
+			Status:  model.StatusProcessed,
+			Accrual: 123.45,
+		}, nil)
+		require.NoError(t, err)
 	})
 
 	t.Run("Process poll results with nil accrual info", func(t *testing.T) {
@@ -458,8 +487,9 @@ func TestController_processPollResult(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 
 		orderNumber := "2844830162"
@@ -472,18 +502,8 @@ func TestController_processPollResult(t *testing.T) {
 			UpdatePollingSchedule(ctx, orderNumber, gomock.Any()).
 			Return(nil)
 
-		errCh := make(chan error)
-		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			OrderAccrual: nil,
-			Err:         nil,
-		}, errCh)
-
-		go func() {
-			for err := range errCh {
-				require.NoError(t, err)
-			}
-		}()
-		time.Sleep(time.Second * 2)
+		err := ctrl.processPollResult(ctx, orderNumber, 0, nil, nil)
+		require.NoError(t, err)
 	})
 
 	t.Run("Process poll results with non-final status", func(t *testing.T) {
@@ -492,8 +512,9 @@ func TestController_processPollResult(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 
 		orderNumber := "2844830162"
@@ -510,21 +531,17 @@ func TestController_processPollResult(t *testing.T) {
 			UpdatePollingSchedule(ctx, orderNumber, gomock.Any()).
 			Return(nil)
 
-		errCh := make(chan error)
-		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			OrderAccrual: &accrual.OrderAccrual{
-				Order:  orderNumber,
-				Status: model.StatusProcessing,
-			},
-			Err: nil,
-		}, errCh)
+		uow.EXPECT().
+			WithTx(ctx, database.TxLevelSerializable, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, level database.TxLevel, fn func(ctx context.Context) error) error {
+				return fn(ctx)
+			})
 
-		go func() {
-			for err := range errCh {
-				require.NoError(t, err)
-			}
-		}()
-		time.Sleep(time.Second * 2)
+		err := ctrl.processPollResult(ctx, orderNumber, 0, &accrual.OrderAccrual{
+			Order:  orderNumber,
+			Status: model.StatusProcessing,
+		}, nil)
+		require.NoError(t, err)
 	})
 
 	t.Run("Process poll results with error on updating schedule", func(t *testing.T) {
@@ -533,8 +550,9 @@ func TestController_processPollResult(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 
 		orderNumber := "2844830162"
@@ -547,18 +565,21 @@ func TestController_processPollResult(t *testing.T) {
 			UpdatePollingSchedule(ctx, orderNumber, gomock.Any()).
 			Return(errors.New("error updating schedule"))
 
-		errCh := make(chan error)
-		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			OrderAccrual: nil,
-			Err:         errors.New("polling error"),
-		}, errCh)
+		orderRepo.EXPECT().
+			UpdateOrderAfterPolling(ctx, gomock.Any()).
+			Return(nil)
 
-		go func() {
-			for err := range errCh {
-				require.Error(t, err)
-			}
-		}()
-		time.Sleep(time.Second * 2)
+		uow.EXPECT().
+			WithTx(ctx, database.TxLevelSerializable, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, level database.TxLevel, fn func(ctx context.Context) error) error {
+				return fn(ctx)
+			})
+
+		err := ctrl.processPollResult(ctx, orderNumber, 0, &accrual.OrderAccrual{
+			Order:  orderNumber,
+			Status: model.StatusProcessing,
+		}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("Process poll results with error on processing with data", func(t *testing.T) {
@@ -567,94 +588,22 @@ func TestController_processPollResult(t *testing.T) {
 		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
 		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
 		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
+		ctrl := New(orderRepo, balanceUpdater, accrualService, uow)
 		ctx := t.Context()
 
 		orderNumber := "2844830162"
 
-		orderRepo.EXPECT().
-			BeginTx(ctx, gomock.Any()).
-			Return(ctx, nil)
+		uow.EXPECT().
+			WithTx(ctx, database.TxLevelSerializable, gomock.Any()).
+			Return(errors.New("error"))
 
-		orderRepo.EXPECT().
-			UpdateOrderAfterPolling(ctx, gomock.Any()).
-			Return(nil)
-
-		orderRepo.EXPECT().
-			FindOrderByNumber(ctx, orderNumber).
-			Return(&model.Order{
-				Number: orderNumber,
-				UserID: int64(1),
-			}, nil)
-
-		balanceUpdater.EXPECT().
-			UpdateBalanceAccrual(ctx, int64(1), 123.45).
-			Return(errors.New("error updating balance"))
-
-		orderRepo.EXPECT().
-			DeletePollingSchedule(ctx, orderNumber).
-			Return(nil)
-
-		orderRepo.EXPECT().
-			RollbackTx(ctx)
-
-		errCh := make(chan error)
-		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			OrderAccrual: &accrual.OrderAccrual{
-				Order:   orderNumber,
-				Status:  model.StatusProcessed,
-				Accrual: 123.45,
-			},
-			Err: nil,
-		}, errCh)
-
-		go func() {
-			for err := range errCh {
-				require.Error(t, err)
-			}
-		}()
-		time.Sleep(time.Second * 2)
-	})
-
-	t.Run("Process poll results with error on updating order after polling", func(t *testing.T) {
-		t.Parallel()
-
-		orderRepo := mocks.NewMockorderRepo(gomock.NewController(t))
-		balanceUpdater := mocks.NewMockbalanceUpdater(gomock.NewController(t))
-		accrualService := mocks.NewMockAccrualService(gomock.NewController(t))
-
-		ctrl := New(orderRepo, balanceUpdater, accrualService)
-		ctx := t.Context()
-
-		orderNumber := "2844830162"
-
-		orderRepo.EXPECT().
-			BeginTx(ctx, gomock.Any()).
-			Return(ctx, nil)
-
-		orderRepo.EXPECT().
-			UpdateOrderAfterPolling(ctx, gomock.Any()).
-			Return(errors.New("error updating order after polling"))
-
-		orderRepo.EXPECT().
-			RollbackTx(ctx)
-
-		errCh := make(chan error)
-		go ctrl.processPollResult(ctx, orderNumber, 0, accrual.PollResult{
-			OrderAccrual: &accrual.OrderAccrual{
-				Order:   orderNumber,
-				Status:  model.StatusProcessed,
-				Accrual: 123.45,
-			},
-			Err: nil,
-		}, errCh)
-
-		go func() {
-			for err := range errCh {
-				require.Error(t, err)
-			}
-		}()
-		time.Sleep(time.Second * 2)
+		err := ctrl.processPollResult(ctx, orderNumber, 0, &accrual.OrderAccrual{
+			Order:   orderNumber,
+			Status:  model.StatusProcessed,
+			Accrual: 123.45,
+		}, nil)
+		require.Error(t, err)
 	})
 }

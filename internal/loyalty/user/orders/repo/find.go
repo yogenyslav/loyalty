@@ -44,8 +44,17 @@ const findPollableOrders = `
 `
 
 // FindPollableOrders finds orders that may be polled for updates.
-func (r *Repo) FindPollableOrders(ctx context.Context) ([]*model.PollableOrder, error) {
+func (r *Repo) FindPollableOrders(ctx context.Context) (map[string]*model.PollableOrder, error) {
 	var orders []*model.PollableOrder
 	err := r.db.QuerySlice(ctx, &orders, findPollableOrders)
-	return orders, errs.Wrap(err, "query slice")
+	if err != nil {
+		return nil, errs.Wrap(err, "query slice")
+	}
+
+	res := make(map[string]*model.PollableOrder, len(orders))
+	for _, order := range orders {
+		res[order.Number] = order
+	}
+
+	return res, nil
 }

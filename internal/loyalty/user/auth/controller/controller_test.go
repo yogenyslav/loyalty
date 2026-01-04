@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/require"
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/auth/model"
+	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/secure"
 	"github.com/yogenyslav/loyalty/tests/mocks"
 	"go.uber.org/mock/gomock"
@@ -21,11 +22,13 @@ func TestController_Login(t *testing.T) {
 	t.Run("User is found, login success", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		repo := mocks.NewMockuserRepo(gomock.NewController(t))
+		ctx := t.Context()
+		userRepo := mocks.NewMockuserRepo(gomock.NewController(t))
+		balanceRepo := mocks.NewMockuserBalanceRepo(gomock.NewController(t))
 		jwt := mocks.NewMockJwtProvider(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo, jwt)
+		ctrl := New(userRepo, balanceRepo, jwt, uow)
 
 		req := &model.LoginReq{
 			Login:    "test_user",
@@ -41,7 +44,7 @@ func TestController_Login(t *testing.T) {
 			HashedPassword: hashedPassword,
 		}
 
-		repo.EXPECT().
+		userRepo.EXPECT().
 			FindUserByLogin(ctx, req.Login).
 			Return(user, nil)
 
@@ -58,18 +61,20 @@ func TestController_Login(t *testing.T) {
 	t.Run("User not found", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		repo := mocks.NewMockuserRepo(gomock.NewController(t))
+		ctx := t.Context()
+		userRepo := mocks.NewMockuserRepo(gomock.NewController(t))
+		balanceRepo := mocks.NewMockuserBalanceRepo(gomock.NewController(t))
 		jwt := mocks.NewMockJwtProvider(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo, jwt)
+		ctrl := New(userRepo, balanceRepo, jwt, uow)
 
 		req := &model.LoginReq{
 			Login:    "asdf",
 			Password: "test123456",
 		}
 
-		repo.EXPECT().
+		userRepo.EXPECT().
 			FindUserByLogin(ctx, req.Login).
 			Return(nil, pgx.ErrNoRows)
 
@@ -81,11 +86,13 @@ func TestController_Login(t *testing.T) {
 	t.Run("Invalid password", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		repo := mocks.NewMockuserRepo(gomock.NewController(t))
+		ctx := t.Context()
+		userRepo := mocks.NewMockuserRepo(gomock.NewController(t))
+		balanceRepo := mocks.NewMockuserBalanceRepo(gomock.NewController(t))
 		jwt := mocks.NewMockJwtProvider(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo, jwt)
+		ctrl := New(userRepo, balanceRepo, jwt, uow)
 
 		req := &model.LoginReq{
 			Login:    "test_user",
@@ -101,7 +108,7 @@ func TestController_Login(t *testing.T) {
 			HashedPassword: hashedPassword,
 		}
 
-		repo.EXPECT().
+		userRepo.EXPECT().
 			FindUserByLogin(ctx, req.Login).
 			Return(user, nil)
 
@@ -113,18 +120,20 @@ func TestController_Login(t *testing.T) {
 	t.Run("SQL error on FindUserByLogin", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		repo := mocks.NewMockuserRepo(gomock.NewController(t))
+		ctx := t.Context()
+		userRepo := mocks.NewMockuserRepo(gomock.NewController(t))
+		balanceRepo := mocks.NewMockuserBalanceRepo(gomock.NewController(t))
 		jwt := mocks.NewMockJwtProvider(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo, jwt)
+		ctrl := New(userRepo, balanceRepo, jwt, uow)
 
 		req := &model.LoginReq{
 			Login:    "test_user",
 			Password: "test123456",
 		}
 
-		repo.EXPECT().
+		userRepo.EXPECT().
 			FindUserByLogin(ctx, req.Login).
 			Return(nil, errors.New("some error"))
 
@@ -136,11 +145,13 @@ func TestController_Login(t *testing.T) {
 	t.Run("Error on CreateAccessToken", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		repo := mocks.NewMockuserRepo(gomock.NewController(t))
+		ctx := t.Context()
+		userRepo := mocks.NewMockuserRepo(gomock.NewController(t))
+		balanceRepo := mocks.NewMockuserBalanceRepo(gomock.NewController(t))
 		jwt := mocks.NewMockJwtProvider(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo, jwt)
+		ctrl := New(userRepo, balanceRepo, jwt, uow)
 
 		req := &model.LoginReq{
 			Login:    "test_user",
@@ -156,7 +167,7 @@ func TestController_Login(t *testing.T) {
 			HashedPassword: hashedPassword,
 		}
 
-		repo.EXPECT().
+		userRepo.EXPECT().
 			FindUserByLogin(ctx, req.Login).
 			Return(user, nil)
 
@@ -176,20 +187,32 @@ func TestController_Register(t *testing.T) {
 	t.Run("User is created", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		repo := mocks.NewMockuserRepo(gomock.NewController(t))
+		ctx := t.Context()
+		userRepo := mocks.NewMockuserRepo(gomock.NewController(t))
+		balanceRepo := mocks.NewMockuserBalanceRepo(gomock.NewController(t))
 		jwt := mocks.NewMockJwtProvider(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo, jwt)
+		ctrl := New(userRepo, balanceRepo, jwt, uow)
 
 		req := &model.RegisterReq{
 			Login:    "new_user",
 			Password: "test123456",
 		}
 
-		repo.EXPECT().
+		uow.EXPECT().
+			WithTx(gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, level database.TxLevel, fn func(ctx context.Context) error) error {
+				return fn(ctx)
+			})
+
+		userRepo.EXPECT().
 			InsertUser(gomock.Any(), gomock.Any()).
 			Return(int64(1), nil)
+
+		balanceRepo.EXPECT().
+			InsertBalance(gomock.Any(), int64(1)).
+			Return(nil)
 
 		jwt.EXPECT().
 			CreateAccessToken(int64(1)).
@@ -207,18 +230,26 @@ func TestController_Register(t *testing.T) {
 	t.Run("User already exists", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		repo := mocks.NewMockuserRepo(gomock.NewController(t))
+		ctx := t.Context()
+		userRepo := mocks.NewMockuserRepo(gomock.NewController(t))
+		balanceRepo := mocks.NewMockuserBalanceRepo(gomock.NewController(t))
 		jwt := mocks.NewMockJwtProvider(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo, jwt)
+		ctrl := New(userRepo, balanceRepo, jwt, uow)
 
 		req := &model.RegisterReq{
 			Login:    "test_user",
 			Password: "test123456",
 		}
 
-		repo.EXPECT().
+		uow.EXPECT().
+			WithTx(gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, level database.TxLevel, fn func(ctx context.Context) error) error {
+				return fn(ctx)
+			})
+
+		userRepo.EXPECT().
 			InsertUser(gomock.Any(), gomock.Any()).
 			Return(int64(0), &pgconn.PgError{Code: pgerrcode.UniqueViolation})
 
@@ -230,18 +261,26 @@ func TestController_Register(t *testing.T) {
 	t.Run("SQL error on InsertUser", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		repo := mocks.NewMockuserRepo(gomock.NewController(t))
+		ctx := t.Context()
+		userRepo := mocks.NewMockuserRepo(gomock.NewController(t))
+		balanceRepo := mocks.NewMockuserBalanceRepo(gomock.NewController(t))
 		jwt := mocks.NewMockJwtProvider(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo, jwt)
+		ctrl := New(userRepo, balanceRepo, jwt, uow)
 
 		req := &model.RegisterReq{
 			Login:    "test_user",
 			Password: "test123456",
 		}
 
-		repo.EXPECT().
+		uow.EXPECT().
+			WithTx(gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, level database.TxLevel, fn func(ctx context.Context) error) error {
+				return fn(ctx)
+			})
+
+		userRepo.EXPECT().
 			InsertUser(gomock.Any(), gomock.Any()).
 			Return(int64(0), errors.New("some error"))
 
@@ -253,20 +292,32 @@ func TestController_Register(t *testing.T) {
 	t.Run("Error on CreateAccessToken", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		repo := mocks.NewMockuserRepo(gomock.NewController(t))
+		ctx := t.Context()
+		userRepo := mocks.NewMockuserRepo(gomock.NewController(t))
+		balanceRepo := mocks.NewMockuserBalanceRepo(gomock.NewController(t))
 		jwt := mocks.NewMockJwtProvider(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo, jwt)
+		ctrl := New(userRepo, balanceRepo, jwt, uow)
 
 		req := &model.RegisterReq{
 			Login:    "test_user",
 			Password: "test123456",
 		}
 
-		repo.EXPECT().
+		uow.EXPECT().
+			WithTx(gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, level database.TxLevel, fn func(ctx context.Context) error) error {
+				return fn(ctx)
+			})
+
+		userRepo.EXPECT().
 			InsertUser(gomock.Any(), gomock.Any()).
 			Return(int64(1), nil)
+
+		balanceRepo.EXPECT().
+			InsertBalance(gomock.Any(), int64(1)).
+			Return(nil)
 
 		jwt.EXPECT().
 			CreateAccessToken(int64(1)).
@@ -280,11 +331,13 @@ func TestController_Register(t *testing.T) {
 	t.Run("Error hashing password", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		repo := mocks.NewMockuserRepo(gomock.NewController(t))
+		ctx := t.Context()
+		userRepo := mocks.NewMockuserRepo(gomock.NewController(t))
+		balanceRepo := mocks.NewMockuserBalanceRepo(gomock.NewController(t))
 		jwt := mocks.NewMockJwtProvider(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo, jwt)
+		ctrl := New(userRepo, balanceRepo, jwt, uow)
 
 		req := &model.RegisterReq{
 			Login:    "test_user",

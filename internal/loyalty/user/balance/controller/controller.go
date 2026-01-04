@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/balance/model"
+	"github.com/yogenyslav/loyalty/pkg/database"
 )
 
 //go:generate mockgen -destination=../../../../../tests/mocks/balance_repo.go -package=mocks . balanceRepo
@@ -17,10 +18,14 @@ type balanceRepo interface {
 
 // Controller provides methods for balance handling logic.
 type Controller struct {
-	br balanceRepo
+	br  balanceRepo
+	uow database.UnitOfWork
 }
 
 // New creates a new Controller instance.
-func New(br balanceRepo) *Controller {
-	return &Controller{br: br}
+func New(br balanceRepo, uow database.UnitOfWork) *Controller {
+	return &Controller{
+		br:  br,
+		uow: uow,
+	}
 }

@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/rs/zerolog/log"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 	"github.com/yogenyslav/loyalty/pkg/retry"
 )
@@ -47,10 +46,6 @@ func (ac *Service) ProcessOrder(ctx context.Context, orderNumber string) (*Order
 	if err != nil {
 		return nil, errs.Wrap(err, "process order")
 	}
-
-	log.Debug().Str("orderNumber", orderNumber).
-		Int("statusCode", statusCode).
-		Msg("accrual service response")
 
 	// order is not in the accrual system
 	if statusCode == http.StatusNoContent {

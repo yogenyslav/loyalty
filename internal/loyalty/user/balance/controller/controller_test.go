@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/balance/model"
+	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/tests/mocks"
 	"go.uber.org/mock/gomock"
 )
@@ -18,10 +19,11 @@ func TestController_GetBalance(t *testing.T) {
 	t.Run("Balance is returned", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		repo := mocks.NewMockbalanceRepo(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo)
+		ctrl := New(repo, uow)
 
 		userID := int64(1)
 		balance := &model.Balance{
@@ -42,10 +44,11 @@ func TestController_GetBalance(t *testing.T) {
 	t.Run("Error from repo", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		repo := mocks.NewMockbalanceRepo(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo)
+		ctrl := New(repo, uow)
 		userID := int64(1)
 
 		repo.EXPECT().
@@ -64,10 +67,11 @@ func TestController_ListWithdrawals(t *testing.T) {
 	t.Run("Withdrawals are returned", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		repo := mocks.NewMockbalanceRepo(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo)
+		ctrl := New(repo, uow)
 
 		today := time.Now()
 		userID := int64(1)
@@ -101,10 +105,11 @@ func TestController_ListWithdrawals(t *testing.T) {
 	t.Run("Error from repo", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		repo := mocks.NewMockbalanceRepo(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo)
+		ctrl := New(repo, uow)
 		userID := int64(1)
 
 		repo.EXPECT().
@@ -123,10 +128,11 @@ func TestController_Withdraw(t *testing.T) {
 	t.Run("Withdrawal is created", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		repo := mocks.NewMockbalanceRepo(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo)
+		ctrl := New(repo, uow)
 
 		userID := int64(1)
 		orderNumber := "2844830162"
@@ -144,9 +150,19 @@ func TestController_Withdraw(t *testing.T) {
 				Withdrawn: 0.0,
 			}, nil)
 
+		uow.EXPECT().
+			WithTx(gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, level database.TxLevel, fn func(ctx context.Context) error) error {
+				return fn(ctx)
+			})
+
 		repo.EXPECT().
 			InsertWithdrawal(ctx, userID, orderNumber, amount).
 			Return(int64(1), nil)
+
+		repo.EXPECT().
+			UpdateBalanceWithdraw(ctx, userID, amount).
+			Return(nil)
 
 		err := ctrl.Withdraw(ctx, userID, req)
 		require.NoError(t, err)
@@ -155,10 +171,11 @@ func TestController_Withdraw(t *testing.T) {
 	t.Run("Not enough balance", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		repo := mocks.NewMockbalanceRepo(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo)
+		ctrl := New(repo, uow)
 
 		userID := int64(1)
 		orderNumber := "2844830162"
@@ -183,10 +200,11 @@ func TestController_Withdraw(t *testing.T) {
 	t.Run("Invalid order number", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		repo := mocks.NewMockbalanceRepo(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo)
+		ctrl := New(repo, uow)
 
 		userID := int64(1)
 		orderNumber := "12345"
@@ -204,10 +222,11 @@ func TestController_Withdraw(t *testing.T) {
 	t.Run("Error from repo", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		repo := mocks.NewMockbalanceRepo(gomock.NewController(t))
+		uow := mocks.NewMockUnitOfWork(gomock.NewController(t))
 
-		ctrl := New(repo)
+		ctrl := New(repo, uow)
 
 		userID := int64(1)
 		orderNumber := "2844830162"

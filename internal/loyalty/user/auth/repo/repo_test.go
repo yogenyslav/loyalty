@@ -5,25 +5,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/auth/model"
-	br "github.com/yogenyslav/loyalty/internal/loyalty/user/balance/repo"
 	"github.com/yogenyslav/loyalty/pkg/secure"
 	db_test "github.com/yogenyslav/loyalty/tests/db"
 )
-
-const findBalanceByUserID = `
-	select count(*)
-	from loyalty.balance
-	where fk_user_id = $1
-`
 
 func TestUserRepo(t *testing.T) {
 	db := db_test.SetupTestDB(t)
 	defer db_test.DropMigrations(t)
 
-	balanceRepo := br.New(db)
-	repo := New(db, balanceRepo)
+	repo := New(db)
 
-	t.Run("user and balance insert", func(t *testing.T) {
+	t.Run("user is inserted", func(t *testing.T) {
 		defer db_test.ClearTables(t, "loyalty.balance", "loyalty.user")
 
 		ctx := t.Context()
@@ -42,11 +34,6 @@ func TestUserRepo(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, u.Login, foundUser.Login)
 		require.Equal(t, u.HashedPassword, foundUser.HashedPassword)
-
-		var foundBalance int
-		err = db.QueryRow(ctx, &foundBalance, findBalanceByUserID, userID)
-		require.NoError(t, err)
-		require.Equal(t, 1, foundBalance)
 	})
 
 	t.Run("Insert duplicate user", func(t *testing.T) {

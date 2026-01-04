@@ -14,6 +14,7 @@ import (
 	sql "database/sql"
 	reflect "reflect"
 
+	database "github.com/yogenyslav/loyalty/pkg/database"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,21 +42,6 @@ func (m *MockDB) EXPECT() *MockDBMockRecorder {
 	return m.recorder
 }
 
-// BeginTx mocks base method.
-func (m *MockDB) BeginTx(ctx context.Context, level string) (context.Context, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BeginTx", ctx, level)
-	ret0, _ := ret[0].(context.Context)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// BeginTx indicates an expected call of BeginTx.
-func (mr *MockDBMockRecorder) BeginTx(ctx, level any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTx", reflect.TypeOf((*MockDB)(nil).BeginTx), ctx, level)
-}
-
 // Close mocks base method.
 func (m *MockDB) Close() {
 	m.ctrl.T.Helper()
@@ -66,20 +52,6 @@ func (m *MockDB) Close() {
 func (mr *MockDBMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDB)(nil).Close))
-}
-
-// CommitTx mocks base method.
-func (m *MockDB) CommitTx(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CommitTx", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CommitTx indicates an expected call of CommitTx.
-func (mr *MockDBMockRecorder) CommitTx(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CommitTx", reflect.TypeOf((*MockDB)(nil).CommitTx), ctx)
 }
 
 // Exec mocks base method.
@@ -154,20 +126,6 @@ func (mr *MockDBMockRecorder) QuerySlice(ctx, dst, query any, args ...any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QuerySlice", reflect.TypeOf((*MockDB)(nil).QuerySlice), varargs...)
 }
 
-// RollbackTx mocks base method.
-func (m *MockDB) RollbackTx(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RollbackTx", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RollbackTx indicates an expected call of RollbackTx.
-func (mr *MockDBMockRecorder) RollbackTx(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RollbackTx", reflect.TypeOf((*MockDB)(nil).RollbackTx), ctx)
-}
-
 // SQLDB mocks base method.
 func (m *MockDB) SQLDB() (*sql.DB, error) {
 	m.ctrl.T.Helper()
@@ -239,4 +197,47 @@ func (mr *MockDBMockRecorder) TxQuerySlice(ctx, dst, query any, args ...any) *go
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, dst, query}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxQuerySlice", reflect.TypeOf((*MockDB)(nil).TxQuerySlice), varargs...)
+}
+
+// beginTx mocks base method.
+func (m *MockDB) beginTx(ctx context.Context, level database.TxLevel) (context.Context, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "beginTx", ctx, level)
+	ret0, _ := ret[0].(context.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// beginTx indicates an expected call of beginTx.
+func (mr *MockDBMockRecorder) beginTx(ctx, level any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "beginTx", reflect.TypeOf((*MockDB)(nil).beginTx), ctx, level)
+}
+
+// commitTx mocks base method.
+func (m *MockDB) commitTx(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "commitTx", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// commitTx indicates an expected call of commitTx.
+func (mr *MockDBMockRecorder) commitTx(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "commitTx", reflect.TypeOf((*MockDB)(nil).commitTx), ctx)
+}
+
+// rollbackTx mocks base method.
+func (m *MockDB) rollbackTx(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "rollbackTx", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// rollbackTx indicates an expected call of rollbackTx.
+func (mr *MockDBMockRecorder) rollbackTx(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "rollbackTx", reflect.TypeOf((*MockDB)(nil).rollbackTx), ctx)
 }

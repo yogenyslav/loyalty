@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 
-	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 )
 
@@ -26,27 +25,10 @@ const insertWithdrawal = `
 
 // InsertWithdrawal inserts a withdrawal record for specified user and order.
 func (r *Repo) InsertWithdrawal(ctx context.Context, userID int64, orderNumber string, amount float64) (int64, error) {
-	tx, err := r.db.BeginTx(ctx, database.TxLevelSerializable)
-	if err != nil {
-		return 0, errs.Wrap(err, "begin tx")
-	}
-	defer r.db.RollbackTx(tx) //nolint:errcheck // rollback if not committed
-
 	var withdrawalID int64
-	err = r.db.TxQueryRow(tx, &withdrawalID, insertWithdrawal, userID, orderNumber, amount)
+	err := r.db.TxQueryRow(ctx, &withdrawalID, insertWithdrawal, userID, orderNumber, amount)
 	if err != nil {
 		return 0, errs.Wrap(err, "tx query row")
 	}
-
-	err = r.UpdateBalanceWithdraw(ctx, userID, amount)
-	if err != nil {
-		return 0, errs.Wrap(err, "update balance")
-	}
-
-	err = r.db.CommitTx(tx)
-	if err != nil {
-		return 0, errs.Wrap(err, "commit tx")
-	}
-
 	return withdrawalID, nil
 }

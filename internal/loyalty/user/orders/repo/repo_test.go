@@ -111,7 +111,8 @@ func TestAccrualPolling(t *testing.T) {
 		pollableOrders, err := repo.FindPollableOrders(ctx)
 		require.NoError(t, err)
 		require.Len(t, pollableOrders, 1)
-		require.Equal(t, order.Number, pollableOrders[0].Number)
+		_, ok := pollableOrders[order.Number]
+		require.True(t, ok)
 	})
 
 	t.Run("Update polling schedule", func(t *testing.T) {

@@ -2,6 +2,7 @@
 package server
 
 import (
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,7 +10,6 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
-	"github.com/rs/zerolog/log"
 	"github.com/yogenyslav/loyalty/pkg/errs"
 )
 
@@ -53,7 +53,7 @@ func (s *Server) Run() error {
 	case err := <-errCh:
 		return errs.Wrap(err, "server error")
 	case <-stopCh:
-		log.Info().Msg("shutting down server")
+		slog.Info("shutting down server")
 		if err := s.app.Shutdown(); err != nil {
 			return errs.Wrap(err, "shutdown server")
 		}
@@ -64,7 +64,7 @@ func (s *Server) Run() error {
 
 func (s *Server) listen(errCh chan<- error) {
 	addr := s.cfg.GetAddr()
-	log.Info().Str("addr", addr).Msg("starting server")
+	slog.Info("starting server", slog.String("addr", addr))
 	if err := s.app.Listen(addr); err != nil {
 		errCh <- errs.Wrap(err, "serve http")
 	}

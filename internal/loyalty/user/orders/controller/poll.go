@@ -2,13 +2,14 @@ package controller
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"github.com/yogenyslav/loyalty/internal/accrual"
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/orders/model"
 	"github.com/yogenyslav/loyalty/pkg/database"
 	"github.com/yogenyslav/loyalty/pkg/errs"
+	"golang.org/x/sync/errgroup"
 )
 
 const maxBackoffSeconds = 600
@@ -23,70 +24,120 @@ func (ctrl *Controller) PollOrders(ctx context.Context, errCh chan<- error) {
 		case <-ctx.Done():
 			return
 		case <-timer.C:
-			log.Info().Msg("polling orders")
+			slog.Info("polling orders")
 
 			pollableOrders, err := ctrl.or.FindPollableOrders(ctx)
 			if err != nil {
 				errCh <- errs.Wrap(err, "find pollable orders")
-				continue
 			}
 
 			orders := make(chan string, len(pollableOrders))
-			results := make(chan accrual.PollResult, len(pollableOrders))
+			results := make(chan *accrual.OrderAccrual, len(pollableOrders))
 
-			go ctrl.accrualService.Poll(ctx, orders, results)
-
-			for _, order := range pollableOrders {
-				orders <- order.Number
-			}
-			close(orders)
-
-			for _, order := range pollableOrders {
-				go ctrl.processPollResult(ctx, order.Number, order.Attempt, <-results, errCh)
-			}
-			close(results)
+			err = ctrl.pollOnce(ctx, orders, results, pollableOrders)
+			errCh <- errs.Wrap(err, "poll once")
 		}
 	}
+}
+
+func (ctrl *Controller) pollOnce(
+	ctx context.Context,
+	orders chan string,
+	results chan *accrual.OrderAccrual,
+	pollableOrders map[string]*model.PollableOrder,
+) error {
+	if len(pollableOrders) == 0 {
+		return nil
+	}
+
+	g, ctx := errgroup.WithContext(ctx)
+	numWorkers := ctrl.accrualService.NumWorkers()
+
+	// explicitly set limit to numWorkers, although goroutines are only created in range over numWorkers
+	g.SetLimit(numWorkers)
+
+	for range numWorkers {
+		g.Go(func() error {
+			return ctrl.accrualService.Poll(ctx, orders, results)
+		})
+	}
+
+	for _, order := range pollableOrders {
+		orders <- order.Number
+	}
+	close(orders)
+
+	// store pollingError to process the case when polling failed
+	var pollingError error
+	if pollingError = g.Wait(); pollingError != nil {
+		slog.Error("error polling orders", slog.Any("error", errs.Wrap(pollingError)))
+	}
+
+processResults:
+	for {
+		select {
+		// all orders that have been polled and processed successfully have to be marked as 'no pollingError' so that they are not rescheduled
+		case result := <-results:
+			pollAttempt := pollableOrders[result.Order].Attempt
+			g.Go(func() error {
+				return ctrl.processPollResult(
+					ctx,
+					result.Order,
+					pollAttempt,
+					result,
+					nil,
+				)
+			})
+			// also delete them from map to process the rest that are meant to be failed
+			delete(pollableOrders, result.Order)
+		default:
+			// processing failed (or those that were after the first failed)
+			if pollingError != nil {
+				for _, order := range pollableOrders {
+					g.Go(func() error {
+						return ctrl.processPollResult(
+							ctx,
+							order.Number,
+							order.Attempt,
+							nil,
+							pollingError,
+						)
+					})
+				}
+			}
+			break processResults
+		}
+	}
+
+	return errs.Wrap(g.Wait(), "process poll results")
 }
 
 func (ctrl *Controller) processPollResult(
 	ctx context.Context,
 	orderNumber string,
 	attempt int,
-	result accrual.PollResult,
-	errCh chan<- error,
-) {
-	switch {
-	// polling error, increase backoff and update schedule
-	case result.Err != nil:
-		errCh <- errs.Wrap(result.Err, "poll order result")
-
+	result *accrual.OrderAccrual,
+	pollingError error,
+) error {
+	// have polling error -> reschedule with backoff
+	if pollingError != nil {
 		backoffSeconds := getBackoffSeconds(ctrl.accrualService.PollInterval(), attempt)
 		err := ctrl.or.UpdatePollingSchedule(ctx, orderNumber, backoffSeconds)
-		if err != nil {
-			errCh <- errs.Wrap(err, "update polling schedule after polling error")
-			return
-		}
+		return errs.Wrap(err, "update polling schedule after polling error")
+	}
 
 	// only if accrual info is returned
-	case result.OrderAccrual != nil:
-		err := ctrl.processWithData(ctx, orderNumber, result.OrderAccrual)
-		if err != nil {
-			errCh <- errs.Wrap(err, "process poll result with data")
-			return
-		}
+	if result != nil {
+		err := ctrl.uow.WithTx(ctx, database.TxLevelSerializable, func(ctx context.Context) error {
+			return ctrl.processWithData(ctx, orderNumber, result)
+		})
+		return errs.Wrap(err, "process poll result with data")
 	}
 
-	if result.Err == nil && (result.OrderAccrual == nil ||
-		result.OrderAccrual.Status == model.StatusProcessing ||
-		result.OrderAccrual.Status == model.StatusRegistered) {
-		backoffSeconds := ctrl.accrualService.PollInterval()
-		err := ctrl.or.UpdatePollingSchedule(ctx, orderNumber, backoffSeconds)
-		if err != nil {
-			errCh <- errs.Wrap(err, "update polling schedule after polling")
-			return
-		}
-	}
+	// no error, no data -> reschedule with base backoff
+	backoffSeconds := ctrl.accrualService.PollInterval()
+	err := ctrl.or.UpdatePollingSchedule(ctx, orderNumber, backoffSeconds)
+	return errs.Wrap(err, "update polling schedule after polling")
 }
 
 func (ctrl *Controller) processWithData(
@@ -98,28 +149,22 @@ func (ctrl *Controller) processWithData(
 		return nil
 	}
 
-	if accrualInfo.Status == model.StatusProcessed || accrualInfo.Status == model.StatusInvalid {
-		tx, err := ctrl.or.BeginTx(ctx, database.TxLevelSerializable)
-		if err != nil {
-			return errs.Wrap(err, "begin tx for polling processing")
-		}
-		defer ctrl.or.RollbackTx(ctx) //nolint:errcheck // nothing we can do
-
-		// switch to tx context
-		ctx = tx
-	}
-
 	// update order status and accrual
 	err := ctrl.or.UpdateOrderAfterPolling(ctx, accrualInfo)
 	if err != nil {
 		return errs.Wrap(err, "update order after polling")
 	}
 
+	switch accrualInfo.Status {
 	// polling returned final status, delete from polling schedule
-	if accrualInfo.Status == model.StatusProcessed || accrualInfo.Status == model.StatusInvalid {
+	case model.StatusProcessed, model.StatusInvalid:
 		err = ctrl.or.DeletePollingSchedule(ctx, orderNumber)
 		if err != nil {
 			return errs.Wrap(err, "delete polling schedule after final status")
+		}
+
+		if accrualInfo.Status == model.StatusInvalid {
+			return nil
 		}
 
 		order, err := ctrl.or.FindOrderByNumber(ctx, orderNumber)
@@ -132,11 +177,10 @@ func (ctrl *Controller) processWithData(
 			return errs.Wrap(err, "update balance accrual after polling")
 		}
 
-		err = ctrl.or.CommitTx(ctx)
-		if err != nil {
-			return errs.Wrap(err, "commit tx for polling processing")
-		}
+		return nil
+	default:
+		backoffSeconds := ctrl.accrualService.PollInterval()
+		err = ctrl.or.UpdatePollingSchedule(ctx, orderNumber, backoffSeconds)
+		return errs.Wrap(err, "reschedule polling for non-final status")
 	}
-
-	return nil
 }

@@ -5,12 +5,17 @@ import (
 	"context"
 
 	"github.com/yogenyslav/loyalty/internal/loyalty/user/auth/model"
+	"github.com/yogenyslav/loyalty/pkg/database"
 )
 
-//go:generate mockgen -destination=../../../../../tests/mocks/user_repo.go -package=mocks . userRepo
+//go:generate mockgen -destination=../../../../../tests/mocks/user_repo.go -package=mocks . userRepo,userBalanceRepo
 type userRepo interface {
 	InsertUser(ctx context.Context, u *model.User) (int64, error)
 	FindUserByLogin(ctx context.Context, login string) (*model.User, error)
+}
+
+type userBalanceRepo interface {
+	InsertBalance(ctx context.Context, userID int64) error
 }
 
 // JwtProvider defines the interface for JWT token generation.
@@ -23,13 +28,17 @@ type JwtProvider interface {
 // Controller provides methods for user authentication logic.
 type Controller struct {
 	ur          userRepo
+	br          userBalanceRepo
 	jwtProvider JwtProvider
+	uow         database.UnitOfWork
 }
 
 // New creates a new Controller instance.
-func New(ur userRepo, jwtProvider JwtProvider) *Controller {
+func New(ur userRepo, br userBalanceRepo, jwtProvider JwtProvider, uow database.UnitOfWork) *Controller {
 	return &Controller{
 		ur:          ur,
+		br:          br,
 		jwtProvider: jwtProvider,
+		uow:         uow,
 	}
 }

@@ -39,6 +39,9 @@ func TestBalanceRepo(t *testing.T) {
 		require.NoError(t, err)
 		require.Greater(t, withdrawalID, int64(0))
 
+		err = repo.UpdateBalanceWithdraw(ctx, userID, 50.0)
+		require.NoError(t, err)
+
 		updatedBalance, err := repo.FindBalanceByUserID(ctx, userID)
 		require.NoError(t, err)
 		require.Equal(t, 50.0, updatedBalance.Current)

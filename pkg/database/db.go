@@ -58,7 +58,8 @@ type DB interface {
 	Ping(ctx context.Context) error
 	SQLDB() (*sql.DB, error)
 	Close()
-	BeginTx(ctx context.Context, level TxLevel) (context.Context, error)
-	CommitTx(ctx context.Context) error
-	RollbackTx(ctx context.Context) error
+
+	beginTx(ctx context.Context, level TxLevel) (context.Context, error)
+	commitTx(ctx context.Context) error
+	rollbackTx(ctx context.Context) error
 }

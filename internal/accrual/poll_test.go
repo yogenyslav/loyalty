@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 )
 
 func TestAccrualClient_Poll(t *testing.T) {
@@ -64,24 +65,19 @@ func TestAccrualClient_Poll(t *testing.T) {
 			}, mockClient)
 
 			orders := make(chan string, len(tt.orders))
-			result := make(chan PollResult, len(tt.orders))
+			result := make(chan *OrderAccrual, len(tt.orders))
 
-			go ac.Poll(t.Context(), orders, result)
+			g, ctx := errgroup.WithContext(t.Context())
+			g.Go(func() error {
+				return ac.Poll(ctx, orders, result)
+			})
 
 			for _, orderNum := range tt.orders {
 				orders <- orderNum
 			}
 			close(orders)
 
-			var gotErr bool
-			for range tt.orders {
-				res := <-result
-				if res.Err != nil {
-					gotErr = true
-				}
-			}
-
-			require.Equal(t, tt.wantErr, gotErr)
+			require.Equal(t, tt.wantErr, g.Wait() != nil)
 		})
 	}
 }

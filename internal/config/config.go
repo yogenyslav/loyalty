@@ -3,11 +3,11 @@ package config
 
 import (
 	"flag"
+	"log/slog"
 	"os"
 	"strings"
 
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/rs/zerolog/log"
 	"github.com/yogenyslav/loyalty/internal/accrual"
 	"github.com/yogenyslav/loyalty/internal/server"
 	"github.com/yogenyslav/loyalty/pkg/database"
@@ -47,13 +47,12 @@ func New(path ...string) (*Config, error) {
 	}
 
 	if len(path) > 0 {
-		log.Info().Str("path", path[0]).Msg("loading config from yaml file")
+		slog.Info("loading config from yaml file", slog.String("path", path[0]))
 		if err := cleanenv.ReadConfig(path[0], &cfg); err != nil {
 			return nil, errs.Wrap(err, "read yaml config")
 		}
 	} else {
-		log.Info().Msg("loading config from env")
-
+		slog.Info("loading config from env")
 		cfgBlocks := []any{
 			&cfg.Server,
 			&cfg.DB,
