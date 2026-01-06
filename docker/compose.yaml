@@ -1,0 +1,28 @@
+name: loyalty
+
+volumes:
+  pg_data:
+
+services:
+  pg:
+    image: postgres:17
+    restart: unless-stopped
+    container_name: loyalty-pg
+    environment:
+      - POSTGRES_USER=${DB_USER:-pguser}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-pgpass}
+      - POSTGRES_DB=${DB_NAME:-dev}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+  pg-test:
+    image: postgres:17
+    restart: unless-stopped
+    container_name: loyalty-pg-test
+    environment:
+      - POSTGRES_USER=${DB_USER:-pguser}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-pgpass}
+      - POSTGRES_DB=${DB_NAME:-dev}
+    ports:
+      - "${DB_TEST_PORT:-5433}:5432"
